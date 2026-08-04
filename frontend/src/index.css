@@ -1,0 +1,45 @@
+/* Reset */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Full screen */
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Body */
+
+body {
+  font-family: "Segoe UI", sans-serif;
+  background: #fff7ed;
+  color: #333;
+  overflow-x: hidden;
+}
+
+/* Images */
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Buttons */
+
+button {
+  font-family: inherit;
+}
+
+/* Links */
+
+a {
+  text-decoration: none;
+  color: inherit;
+}

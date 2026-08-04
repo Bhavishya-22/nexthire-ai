@@ -1,0 +1,54 @@
+.features{
+
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:30px;
+padding:70px;
+background:white;
+
+}
+
+.card{
+
+padding:35px;
+border:none;
+border-radius:20px;
+background:#fff7ed;
+cursor:pointer;
+transition:.3s;
+text-align:left;
+box-shadow:0 10px 30px rgba(0,0,0,.05);
+
+}
+
+.card:hover{
+
+transform:translateY(-10px);
+background:#ff6b00;
+color:white;
+
+}
+
+.icon{
+
+font-size:45px;
+
+}
+
+.card h3{
+
+margin:20px 0 10px;
+
+}
+
+.card p{
+
+color:#555;
+
+}
+
+.card:hover p{
+
+color:white;
+
+}
