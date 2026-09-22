@@ -11,14 +11,23 @@ router = APIRouter(
 
 
 @router.post("/match")
-async def job_match(
-    request: JobMatchRequest
-):
+async def job_match(request: JobMatchRequest):
+
+    if not request.resume_text.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Resume text cannot be empty"
+        )
+
+    if not request.job_description.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Job description cannot be empty"
+        )
 
     try:
-
         prompt = f"""
-You are an AI career matching engine for ELEVIQ.
+You are an AI career matching engine for NextHire AI.
 
 Compare the candidate's resume with the job description.
 
@@ -42,12 +51,9 @@ Return ONLY valid JSON in exactly this format:
 Rules:
 
 1. match_score must be an integer from 0 to 100.
-2. matching_skills must contain skills present
-   in both the resume and job description.
-3. missing_skills must contain important job skills
-   missing from the resume.
-4. matching_projects should contain relevant projects
-   from the resume.
+2. matching_skills must contain skills present in both the resume and job description.
+3. missing_skills must contain important job skills missing from the resume.
+4. matching_projects should contain relevant projects from the resume.
 5. strengths should explain why the candidate fits.
 6. recommendations should explain how to improve the match.
 7. Do not invent experience or projects.
@@ -61,8 +67,9 @@ Rules:
             "data": result
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
-
         raise HTTPException(
             status_code=500,
             detail=f"Job matching failed: {str(e)}"

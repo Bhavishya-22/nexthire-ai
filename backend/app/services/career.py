@@ -1,5 +1,6 @@
-from app.services.gemini import client, MODEL_NAME
+from app.services.gemini import client, MODEL_NAME, get_client
 from app.schemas.analysis import JobMatchResult
+from app.services.cri import calculate_cri as compute_cri
 from google.genai import types
 
 
@@ -37,7 +38,9 @@ Job Description:
 -------------------------
 """
 
-    response = client.models.generate_content(
+    cli = get_client()
+
+    response = cli.models.generate_content(
         model=MODEL_NAME,
         contents=prompt,
         config=types.GenerateContentConfig(
@@ -58,7 +61,9 @@ def calculate_cri(
     project_score: int,
     experience_score: int
 ) -> int:
-
+    """
+    Legacy 4-factor CRI helper for backward compatibility.
+    """
     cri = (
         ats_score * 0.25
         + skill_match_score * 0.30

@@ -1,30 +1,85 @@
+import json
+import logging
 import os
+import time
+from typing import Any, List, Optional
 
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from google.genai.errors import ServerError, ClientError
 
 from app.schemas.analysis import ResumeAnalysis, JobMatchResult
 
-
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
 
-if not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY is not set in the .env file")
+# Candidate fallback models in case the primary encounters temporary demand spikes
+FALLBACK_MODELS = [
+    MODEL_NAME,
+    "gemini-3.5-flash-lite",
+    "gemini-flash-latest",
+]
+# Remove duplicates while preserving order
+FALLBACK_MODELS = list(dict.fromkeys(FALLBACK_MODELS))
 
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+def get_client() -> genai.Client:
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "GEMINI_API_KEY is not configured. Please set GEMINI_API_KEY in your .env file."
+        )
+    return genai.Client(api_key=api_key)
+
+
+# Initialize client for backward compatibility
+client: Optional[genai.Client] = None
+if GEMINI_API_KEY:
+    try:
+        client = genai.Client(api_key=GEMINI_API_KEY)
+    except Exception as e:
+        logger.warning(f"Could not pre-initialize Gemini client: {e}")
+
+
+def _execute_with_retry_and_fallback(contents: str, config: types.GenerateContentConfig):
+    """
+    Executes Gemini content generation with retry on transient server errors
+    and graceful fallback to secondary flash models if needed.
+    """
+    cli = get_client()
+    last_error = None
+
+    for model in FALLBACK_MODELS:
+        for attempt in range(2):
+            try:
+                response = cli.models.generate_content(
+                    model=model,
+                    contents=contents,
+                    config=config,
+                )
+                if response and response.text:
+                    return response
+            except (ServerError, Exception) as e:
+                last_error = e
+                # If error is a temporary 503 or transient failure, wait briefly and retry
+                time.sleep(1.5)
+                continue
+
+    raise RuntimeError(
+        f"Gemini API request failed across all candidate models ({', '.join(FALLBACK_MODELS)}): {last_error}"
+    )
 
 
 def analyze_resume(resume_text: str) -> ResumeAnalysis:
-
     prompt = f"""
 You are NextHire AI, an AI-powered Career Intelligence system.
 
-Your task is to analyze a candidate's resume and produce structured career
-intelligence.
+Your task is to analyze a candidate's resume and produce structured career intelligence.
 
 Analyze ONLY the information present in the resume.
 
@@ -60,8 +115,7 @@ Extract degrees, institutions, fields of study, and relevant academic informatio
 Identify the strongest aspects of the candidate's profile.
 
 7. MISSING SKILLS
-Identify skills that appear weak or absent based ONLY on the candidate's
-current profile.
+Identify skills that appear weak or absent based ONLY on the candidate's current profile.
 
 8. IMPROVEMENT SUGGESTIONS
 Give practical suggestions for improving the resume and career profile.
@@ -90,14 +144,12 @@ The ATS score is an estimate, not a score from a specific company's ATS.
 Return the result according to the ResumeAnalysis schema.
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=ResumeAnalysis,
-        ),
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=ResumeAnalysis,
     )
+
+    response = _execute_with_retry_and_fallback(prompt, config)
 
     if not response.text:
         raise RuntimeError("Gemini returned an empty response")
@@ -109,7 +161,6 @@ def analyze_job_match(
     resume_text: str,
     job_description: str
 ) -> JobMatchResult:
-
     prompt = f"""
 You are NextHire AI, an AI-powered job matching system.
 
@@ -149,16 +200,30 @@ The match score should consider:
 Return the result according to the JobMatchResult schema.
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=JobMatchResult,
-        ),
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=JobMatchResult,
     )
+
+    response = _execute_with_retry_and_fallback(prompt, config)
 
     if not response.text:
         raise RuntimeError("Gemini returned an empty response")
 
     return JobMatchResult.model_validate_json(response.text)
+
+
+def generate_json(prompt: str) -> dict:
+    """
+    Generates arbitrary structured JSON response for custom prompts.
+    """
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+    )
+
+    response = _execute_with_retry_and_fallback(prompt, config)
+
+    if not response.text:
+        raise RuntimeError("Gemini returned an empty response")
+
+    return json.loads(response.text)

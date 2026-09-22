@@ -1,7 +1,7 @@
-from database import engine
+from app.database import engine
 
 try:
     with engine.connect() as conn:
-        print("✅ Database connected successfully!")
+        print("[OK] Database connected successfully!")
 except Exception as e:
-    print("❌ Connection failed:", e)
+    print("[ERROR] Connection failed:", e)

@@ -1,18 +1,11 @@
-import fitz
+from app.services.pdf import extract_text_from_pdf
 
 
 def extract_text(file):
-
-    document=fitz.open(
-        stream=file.file.read(),
-        filetype="pdf"
-    )
-
-
-    text=""
-
-    for page in document:
-        text+=page.get_text()
-
-
-    return text
+    """
+    Extracts text from a FastAPI UploadFile or file object.
+    """
+    if hasattr(file, "file"):
+        content = file.file.read()
+        return extract_text_from_pdf(content)
+    return extract_text_from_pdf(file)

@@ -1,6 +1,11 @@
 from pydantic import BaseModel, Field
 
 
+class JobMatchRequest(BaseModel):
+    resume_text: str
+    job_description: str
+
+
 class ResumeAnalysis(BaseModel):
     summary: str = Field(
         description="A concise professional summary of the candidate."
@@ -75,6 +80,8 @@ class JobMatchResult(BaseModel):
     recommendations: list[str] = Field(
         default_factory=list
     )
+
+
 class CompleteAnalysis(BaseModel):
     resume_analysis: ResumeAnalysis
     job_match: JobMatchResult | None = None

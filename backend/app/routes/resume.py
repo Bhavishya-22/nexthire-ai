@@ -14,28 +14,25 @@ router = APIRouter(
 
 
 UPLOAD_DIR = "uploads"
-
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 @router.post("/upload")
 async def upload_resume(file: UploadFile = File(...)):
 
-    if file.content_type != "application/pdf":
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(
             status_code=400,
             detail="Only PDF files are supported"
         )
 
     file_id = str(uuid.uuid4())
-
     file_path = os.path.join(
         UPLOAD_DIR,
         f"{file_id}.pdf"
     )
 
     try:
-
         contents = await file.read()
 
         with open(file_path, "wb") as f:
@@ -59,9 +56,7 @@ async def upload_resume(file: UploadFile = File(...)):
 
     except HTTPException:
         raise
-
     except Exception as e:
-
         raise HTTPException(
             status_code=500,
             detail=f"Resume processing failed: {str(e)}"

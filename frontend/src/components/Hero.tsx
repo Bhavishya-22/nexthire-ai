@@ -1,11 +1,13 @@
 import "./Hero.css";
 
-export default function Hero() {
+interface HeroProps {
+  onStartUpload?: () => void;
+}
+
+export default function Hero({ onStartUpload }: HeroProps) {
   return (
     <section className="hero">
-
       <div className="hero-left">
-
         <span className="badge">
           🚀 AI Career Intelligence Platform
         </span>
@@ -17,31 +19,35 @@ export default function Hero() {
         </h1>
 
         <p>
-          Analyze resumes, calculate Career Readiness,
-          discover skill gaps, prepare for interviews,
-          and accelerate your career journey.
+          Analyze resumes, calculate Career Readiness Index (CRI),
+          discover skill gaps, match with job descriptions,
+          and accelerate your career trajectory.
         </p>
 
         <div className="buttons">
-          <button className="primary">
+          <button
+            type="button"
+            className="primary"
+            onClick={onStartUpload}
+          >
             Upload Resume
           </button>
 
-          <button className="secondary">
+          <button
+            type="button"
+            className="secondary"
+            onClick={onStartUpload}
+          >
             Start Free Analysis
           </button>
         </div>
-
       </div>
 
       <div className="hero-right">
-
         <div className="circle">
           🚀
         </div>
-
       </div>
-
     </section>
   );
 }
