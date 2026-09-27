@@ -1,0 +1,54 @@
+{
+  "1. PostgreSQL connection works": {
+    "status": "PASS",
+    "details": "Connected to Supabase (postgres@postgres): PostgreSQL 17.6 on x86_64-pc-linux-gnu, ..."
+  },
+  "2. pgvector extension works": {
+    "status": "PASS",
+    "details": "pgvector v0.8.2 installed and operational"
+  },
+  "3. career_documents table works": {
+    "status": "PASS",
+    "details": "Document ID 5 persisted with JSONB metadata and foreign key"
+  },
+  "4. career_knowledge_chunks table works": {
+    "status": "PASS",
+    "details": "Chunk ID 5 persisted with metadata, vector column and foreign keys"
+  },
+  "5. 768-dimensional embeddings can be stored": {
+    "status": "PASS",
+    "details": "vector_dims returned 768 on Supabase pgvector column"
+  },
+  "6. Resume ingestion works": {
+    "status": "PASS",
+    "details": "Ingested document ID 6 with 9 structured vector chunks in Supabase"
+  },
+  "7. RAG retrieval works": {
+    "status": "PASS",
+    "details": "Retrieved 3 relevant chunks. Top similarity: 0.758"
+  },
+  "8. Cosine similarity search works": {
+    "status": "PASS",
+    "details": "Native pgvector <=> operator executed in Supabase. Similarity score: 0.601"
+  },
+  "9. User isolation works": {
+    "status": "PASS",
+    "details": "User B retrieved 0 chunks of User A data (100% tenant isolation in Supabase)"
+  },
+  "10. Citations work": {
+    "status": "PASS",
+    "details": "Generated 3 citations referencing Alice_AI_Resume.pdf (sim: 0.701)"
+  },
+  "11. Anti-hallucination works": {
+    "status": "PASS",
+    "details": "Refused to fabricate absent experience: Based on your stored Career Knowledge Base, I do not have information ..."
+  },
+  "12. Document deletion works": {
+    "status": "PASS",
+    "details": "Document ID 7 successfully deleted from Supabase"
+  },
+  "13. Cascade deletion works": {
+    "status": "PASS",
+    "details": "Foreign key ON DELETE CASCADE deleted 2 associated vector chunks automatically in Supabase"
+  }
+}

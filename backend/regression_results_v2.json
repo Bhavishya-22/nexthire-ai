@@ -1,7 +1,7 @@
 {
   "1. Registration": {
     "status": "PASS",
-    "details": "Registered user ID 2"
+    "details": "Registered user ID 5"
   },
   "2. Login": {
     "status": "PASS",
@@ -25,7 +25,7 @@
   },
   "7. Skills": {
     "status": "PASS",
-    "details": "21 skills extracted: ['Python', 'C', 'Java', 'Supervised & Unsupervised Learning']"
+    "details": "22 skills extracted: ['Python', 'C', 'Java (Basic)', 'Supervised & Unsupervised Learning']"
   },
   "8. Projects": {
     "status": "PASS",
@@ -49,7 +49,7 @@
   },
   "13. Suggestions": {
     "status": "PASS",
-    "details": "2 suggestions: Add more quantifiable metrics and impact results to the project descriptions...."
+    "details": "2 suggestions: Include more quantified metrics of success in the project descriptions..."
   },
   "14. CRI": {
     "status": "PASS",
@@ -65,11 +65,11 @@
   },
   "17. RAG Assistant": {
     "status": "PASS",
-    "details": "Answer: Based on your stored Career Knowledge Base, here are your core machine learning skills and..."
+    "details": "Answer: Based on your Career Knowledge Base, here are your core machine learning skills and web te..."
   },
   "18. RAG citations": {
     "status": "PASS",
-    "details": "Returned 4 citations. Top similarity: 0.709"
+    "details": "Returned 4 citations. Top similarity: 0.714"
   },
   "19. User isolation": {
     "status": "PASS",
