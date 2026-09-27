@@ -1,12 +1,18 @@
 import { useState } from "react";
 import { analyzeResume, type AnalysisResponse } from "../services/api";
-import ScoreCard from "./ScoreCard";
+import CareerDashboard from "./CareerDashboard";
 
 interface ResumeUploadProps {
   onBack?: () => void;
+  onAnalysisSuccess?: (data: AnalysisResponse["data"], filename: string) => void;
+  onAskAssistant?: () => void;
 }
 
-export default function ResumeUpload({ onBack }: ResumeUploadProps) {
+export default function ResumeUpload({
+  onBack,
+  onAnalysisSuccess,
+  onAskAssistant,
+}: ResumeUploadProps) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResponse["data"] | null>(null);
   const [error, setError] = useState("");
@@ -44,6 +50,9 @@ export default function ResumeUpload({ onBack }: ResumeUploadProps) {
     try {
       const response = await analyzeResume(selectedFile, jobDescription);
       setResult(response.data);
+      if (onAnalysisSuccess) {
+        onAnalysisSuccess(response.data, selectedFile.name);
+      }
     } catch (err: any) {
       console.error("Resume analysis failed:", err);
       const detail =
@@ -58,7 +67,7 @@ export default function ResumeUpload({ onBack }: ResumeUploadProps) {
   return (
     <div
       style={{
-        maxWidth: "1100px",
+        maxWidth: "1150px",
         margin: "0 auto",
         padding: "40px 24px 80px",
         minHeight: "80vh",
@@ -294,310 +303,13 @@ export default function ResumeUpload({ onBack }: ResumeUploadProps) {
         )}
       </div>
 
-      {/* Analysis Results Display */}
+      {/* Dynamic Results Dashboard */}
       {result && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
-          {/* Key Score Highlights */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-              gap: "20px",
-            }}
-          >
-            {result.resume_analysis && (
-              <ScoreCard
-                title="ATS Score"
-                score={result.resume_analysis.ats_score}
-                badgeText={
-                  result.resume_analysis.ats_score >= 80
-                    ? "ATS Optimized"
-                    : result.resume_analysis.ats_score >= 60
-                    ? "Moderate"
-                    : "Needs Polish"
-                }
-                subtitle="Resume parseability & keyword density"
-                color="orange"
-              />
-            )}
-
-            {result.job_match && (
-              <ScoreCard
-                title="Job Compatibility"
-                score={result.job_match.match_score}
-                badgeText={
-                  result.job_match.match_score >= 75
-                    ? "High Fit"
-                    : result.job_match.match_score >= 50
-                    ? "Medium Fit"
-                    : "Low Fit"
-                }
-                subtitle="Alignment with target role"
-                color="blue"
-              />
-            )}
-
-            {result.cri && (
-              <ScoreCard
-                title="Career Readiness Index"
-                score={result.cri.cri_score}
-                badgeText={result.cri.readiness_level}
-                subtitle={`Composite readiness: ${result.cri.readiness_level}`}
-                color="green"
-              />
-            )}
-          </div>
-
-          {/* Detailed CRI Breakdown (if available) */}
-          {result.cri && (
-            <div
-              style={{
-                background: "white",
-                borderRadius: "20px",
-                padding: "28px",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
-                border: "1px solid #e2e8f0",
-              }}
-            >
-              <h3 style={{ margin: "0 0 16px", color: "#1e293b", fontSize: "18px" }}>
-                🎯 Career Readiness Index (CRI) Breakdown
-              </h3>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                  gap: "16px",
-                }}
-              >
-                <div style={{ background: "#fff7ed", padding: "14px", borderRadius: "12px" }}>
-                  <span style={{ fontSize: "12px", color: "#9a3412", fontWeight: 600 }}>ATS Weight (30%)</span>
-                  <div style={{ fontSize: "22px", fontWeight: 800, color: "#ea580c" }}>
-                    {result.cri.breakdown.ats_score}
-                  </div>
-                </div>
-                <div style={{ background: "#eff6ff", padding: "14px", borderRadius: "12px" }}>
-                  <span style={{ fontSize: "12px", color: "#1e40af", fontWeight: 600 }}>Job Match (30%)</span>
-                  <div style={{ fontSize: "22px", fontWeight: 800, color: "#2563eb" }}>
-                    {result.cri.breakdown.job_match_score}
-                  </div>
-                </div>
-                <div style={{ background: "#f0fdf4", padding: "14px", borderRadius: "12px" }}>
-                  <span style={{ fontSize: "12px", color: "#166534", fontWeight: 600 }}>Skills Volume (20%)</span>
-                  <div style={{ fontSize: "22px", fontWeight: 800, color: "#16a34a" }}>
-                    {result.cri.breakdown.skills_score}
-                  </div>
-                </div>
-                <div style={{ background: "#faf5ff", padding: "14px", borderRadius: "12px" }}>
-                  <span style={{ fontSize: "12px", color: "#6b21a8", fontWeight: 600 }}>Projects Volume (10%)</span>
-                  <div style={{ fontSize: "22px", fontWeight: 800, color: "#9333ea" }}>
-                    {result.cri.breakdown.projects_score}
-                  </div>
-                </div>
-                <div style={{ background: "#f8fafc", padding: "14px", borderRadius: "12px" }}>
-                  <span style={{ fontSize: "12px", color: "#334155", fontWeight: 600 }}>Skill Coverage (10%)</span>
-                  <div style={{ fontSize: "22px", fontWeight: 800, color: "#475569" }}>
-                    {result.cri.breakdown.skill_coverage}%
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Professional Summary */}
-          {result.resume_analysis?.summary && (
-            <div
-              style={{
-                background: "white",
-                borderRadius: "20px",
-                padding: "28px",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
-                border: "1px solid #e2e8f0",
-              }}
-            >
-              <h3 style={{ margin: "0 0 12px", color: "#1e293b", fontSize: "18px" }}>
-                👤 Candidate Summary
-              </h3>
-              <p style={{ margin: 0, color: "#475569", lineHeight: 1.7, fontSize: "15px" }}>
-                {result.resume_analysis.summary}
-              </p>
-            </div>
-          )}
-
-          {/* Skills & Missing Skills Grid */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-              gap: "24px",
-            }}
-          >
-            {/* Extracted Skills */}
-            <div
-              style={{
-                background: "white",
-                borderRadius: "20px",
-                padding: "28px",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
-                border: "1px solid #e2e8f0",
-              }}
-            >
-              <h3 style={{ margin: "0 0 16px", color: "#1e293b", fontSize: "18px" }}>
-                🧠 Identified Skills ({result.resume_analysis?.skills?.length || 0})
-              </h3>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {result.resume_analysis?.skills?.map((skill: string, index: number) => (
-                  <span
-                    key={index}
-                    style={{
-                      background: "#fff7ed",
-                      color: "#c2410c",
-                      border: "1px solid #ffedd5",
-                      padding: "6px 14px",
-                      borderRadius: "20px",
-                      fontSize: "13px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Missing Skills */}
-            <div
-              style={{
-                background: "white",
-                borderRadius: "20px",
-                padding: "28px",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
-                border: "1px solid #fee2e2",
-              }}
-            >
-              <h3 style={{ margin: "0 0 16px", color: "#991b1b", fontSize: "18px" }}>
-                🧩 Skill Gaps ({result.resume_analysis?.missing_skills?.length || 0})
-              </h3>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {result.resume_analysis?.missing_skills?.length ? (
-                  result.resume_analysis.missing_skills.map((skill: string, index: number) => (
-                    <span
-                      key={index}
-                      style={{
-                        background: "#fef2f2",
-                        color: "#dc2626",
-                        border: "1px solid #fecaca",
-                        padding: "6px 14px",
-                        borderRadius: "20px",
-                        fontSize: "13px",
-                        fontWeight: 600,
-                      }}
-                    >
-                      + {skill}
-                    </span>
-                  ))
-                ) : (
-                  <p style={{ color: "#64748b", margin: 0, fontSize: "14px" }}>
-                    No critical skill gaps identified.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Job Match Analysis (if available) */}
-          {result.job_match && (
-            <div
-              style={{
-                background: "white",
-                borderRadius: "20px",
-                padding: "28px",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
-                border: "1px solid #bfdbfe",
-              }}
-            >
-              <h3 style={{ margin: "0 0 16px", color: "#1e3a8a", fontSize: "18px" }}>
-                💼 Job Description Alignment
-              </h3>
-
-              <div style={{ marginBottom: "18px" }}>
-                <h4 style={{ margin: "0 0 10px", fontSize: "14px", color: "#166534" }}>
-                  ✓ Matching Skills:
-                </h4>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {result.job_match.matching_skills?.map((skill: string, idx: number) => (
-                    <span
-                      key={idx}
-                      style={{
-                        background: "#f0fdf4",
-                        color: "#15803d",
-                        border: "1px solid #bbf7d0",
-                        padding: "5px 12px",
-                        borderRadius: "16px",
-                        fontSize: "13px",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {result.job_match.recommendations?.length > 0 && (
-                <div>
-                  <h4 style={{ margin: "0 0 10px", fontSize: "14px", color: "#1e293b" }}>
-                    💡 Recommendations for this Position:
-                  </h4>
-                  <ul style={{ margin: 0, paddingLeft: "20px", color: "#475569", lineHeight: 1.7 }}>
-                    {result.job_match.recommendations.map((rec: string, idx: number) => (
-                      <li key={idx}>{rec}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Improvement Suggestions */}
-          {result.resume_analysis?.improvement_suggestions?.length > 0 && (
-            <div
-              style={{
-                background: "white",
-                borderRadius: "20px",
-                padding: "28px",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
-                border: "1px solid #fed7aa",
-              }}
-            >
-              <h3 style={{ margin: "0 0 16px", color: "#c2410c", fontSize: "18px" }}>
-                💡 Actionable Improvement Suggestions
-              </h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {result.resume_analysis.improvement_suggestions.map(
-                  (suggestion: string, index: number) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: "flex",
-                        gap: "12px",
-                        background: "#fffaf5",
-                        padding: "14px 18px",
-                        borderRadius: "12px",
-                        border: "1px solid #ffedd5",
-                        fontSize: "14px",
-                        color: "#475569",
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      <span style={{ color: "#ea580c", fontWeight: 700 }}>#{index + 1}</span>
-                      <span>{suggestion}</span>
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        <CareerDashboard
+          analysisData={result}
+          filename={selectedFile?.name}
+          onAskAssistant={onAskAssistant}
+        />
       )}
     </div>
   );

@@ -28,6 +28,51 @@ class LoginRequest(BaseModel):
     password: str
 
 
+def get_authenticated_user(
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+) -> User:
+    """
+    FastAPI dependency that extracts and validates the JWT Bearer token,
+    returning the authenticated User model.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication token required (Bearer <token>)")
+
+    token = authorization.split(" ")[1]
+    try:
+        payload = decode_access_token(token)
+        user_id = int(payload.get("sub"))
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="Authenticated user no longer exists")
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid or expired token: {str(e)}")
+
+
+def get_optional_user(
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    """
+    FastAPI dependency that returns the authenticated User if valid token is provided,
+    or None if unauthenticated.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+
+    token = authorization.split(" ")[1]
+    try:
+        payload = decode_access_token(token)
+        user_id = int(payload.get("sub"))
+        return db.query(User).filter(User.id == user_id).first()
+    except Exception:
+        return None
+
+
 @router.post("/register")
 def register(request: RegisterRequest, db: Session = Depends(get_db)):
     if not request.email or not request.password or not request.full_name:
@@ -83,28 +128,12 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/me")
-def get_current_user(
-    authorization: Optional[str] = Header(None),
-    db: Session = Depends(get_db)
-):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid authentication token")
-
-    token = authorization.split(" ")[1]
-    try:
-        payload = decode_access_token(token)
-        user_id = int(payload.get("sub"))
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        return {
-            "success": True,
-            "user": {
-                "id": user.id,
-                "full_name": user.full_name,
-                "email": user.email,
-            },
-        }
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+def get_current_user_info(user: User = Depends(get_authenticated_user)):
+    return {
+        "success": True,
+        "user": {
+            "id": user.id,
+            "full_name": user.full_name,
+            "email": user.email,
+        },
+    }

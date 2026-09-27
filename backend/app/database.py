@@ -29,6 +29,13 @@ SessionLocal = sessionmaker(
 Base = declarative_base()
 
 
+def is_postgres() -> bool:
+    """
+    Checks if the active database is PostgreSQL.
+    """
+    return bool(DATABASE_URL and DATABASE_URL.startswith("postgresql"))
+
+
 def get_db():
     """
     FastAPI dependency that provides a database session.
@@ -42,9 +49,14 @@ def get_db():
 
 def init_db():
     """
-    Initializes database tables.
+    Initializes database tables and pgvector extension if PostgreSQL.
     """
     try:
+        if is_postgres():
+            from sqlalchemy import text
+            with engine.connect() as conn:
+                conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+                conn.commit()
         Base.metadata.create_all(bind=engine)
     except Exception as e:
         logger.warning(f"Could not automatically initialize database tables: {e}")

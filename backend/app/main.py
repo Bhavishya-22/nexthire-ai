@@ -12,6 +12,7 @@ from app.routes.cri import router as cri_router
 from app.routes.full_analysis import router as full_analysis_router
 from app.routes.resume_analysis import router as resume_analysis_router
 from app.routes.job import router as job_router
+from app.routes.rag import router as rag_router
 from app.auth import router as auth_router
 
 
@@ -46,6 +47,7 @@ app.include_router(job_match_router)
 app.include_router(cri_router)
 app.include_router(full_analysis_router)
 app.include_router(job_router)
+app.include_router(rag_router)
 app.include_router(auth_router)
 
 

@@ -1,0 +1,86 @@
+{
+  "1. Registration": {
+    "status": "PASS",
+    "details": "Registered user ID 2"
+  },
+  "2. Login": {
+    "status": "PASS",
+    "details": "JWT token issued"
+  },
+  "3. JWT": {
+    "status": "PASS",
+    "details": "Bearer token authenticated and verified"
+  },
+  "4. PDF upload": {
+    "status": "PASS",
+    "details": "Uploaded 99631 bytes"
+  },
+  "5. PDF extraction": {
+    "status": "PASS",
+    "details": "Extracted 4484 chars"
+  },
+  "6. Gemini analysis": {
+    "status": "PASS",
+    "details": "Summary: Second-year B.Tech student specializing in Artificial Intelligence & Machine Lea..."
+  },
+  "7. Skills": {
+    "status": "PASS",
+    "details": "21 skills extracted: ['Python', 'C', 'Java', 'Supervised & Unsupervised Learning']"
+  },
+  "8. Projects": {
+    "status": "PASS",
+    "details": "4 projects extracted: ['Handwritten Digit Recognition System', 'Farm Intel']"
+  },
+  "9. Experience": {
+    "status": "PASS",
+    "details": "Experience: 3 items, Education: 3 items"
+  },
+  "10. ATS": {
+    "status": "PASS",
+    "details": "ATS Score: 85/100"
+  },
+  "11. Job matching": {
+    "status": "PASS",
+    "details": "Match Score: 65/100, Matching Skills: ['Python', 'TensorFlow', 'Scikit-learn']"
+  },
+  "12. Skill gaps": {
+    "status": "PASS",
+    "details": "Gaps identified: ['PyTorch', 'NLP', 'LLMs', 'FastAPI']"
+  },
+  "13. Suggestions": {
+    "status": "PASS",
+    "details": "2 suggestions: Add more quantifiable metrics and impact results to the project descriptions...."
+  },
+  "14. CRI": {
+    "status": "PASS",
+    "details": "CRI: 81/100 (Excellent)"
+  },
+  "15. Dashboard": {
+    "status": "PASS",
+    "details": "CareerDashboard dynamically renders CRI, ATS, Skills, Projects, Experience, Suggestions, and is routed in App.tsx"
+  },
+  "16. Automatic RAG indexing": {
+    "status": "PASS",
+    "details": "Indexed 2 documents with 13 vector chunks"
+  },
+  "17. RAG Assistant": {
+    "status": "PASS",
+    "details": "Answer: Based on your stored Career Knowledge Base, here are your core machine learning skills and..."
+  },
+  "18. RAG citations": {
+    "status": "PASS",
+    "details": "Returned 4 citations. Top similarity: 0.709"
+  },
+  "19. User isolation": {
+    "status": "PASS",
+    "details": "0% data leakage across user accounts"
+  },
+  "20. Anti-hallucination": {
+    "status": "PASS",
+    "details": "Refused to fabricate absent experience: based on your stored career knowledge base, i do not have in..."
+  },
+  "21. Document deletion": {
+    "status": "PASS",
+    "details": "Document and all vector chunks deleted cleanly"
+  }
+}

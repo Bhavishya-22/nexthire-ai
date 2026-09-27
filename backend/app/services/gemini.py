@@ -16,11 +16,12 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
 # Candidate fallback models in case the primary encounters temporary demand spikes
 FALLBACK_MODELS = [
     MODEL_NAME,
+    "gemini-3.8-flash",
     "gemini-3.5-flash-lite",
     "gemini-flash-latest",
 ]
@@ -46,10 +47,20 @@ if GEMINI_API_KEY:
         logger.warning(f"Could not pre-initialize Gemini client: {e}")
 
 
+def _is_transient_error(err: Exception) -> bool:
+    err_str = str(err).lower()
+    return any(ind in err_str for ind in ["503", "unavailable", "high demand", "deadline", "timeout", "server error", "connection reset"])
+
+
+def _is_permanent_or_exhausted(err: Exception) -> bool:
+    err_str = str(err).lower()
+    return any(ind in err_str for ind in ["404", "not_found", "no longer available", "invalidargument", "400", "429", "resource_exhausted", "quota", "rate limit"])
+
+
 def _execute_with_retry_and_fallback(contents: str, config: types.GenerateContentConfig):
     """
-    Executes Gemini content generation with retry on transient server errors
-    and graceful fallback to secondary flash models if needed.
+    Executes Gemini content generation with exponential backoff on transient 503/demand errors
+    and graceful fallback to secondary candidate models if needed.
     """
     cli = get_client()
     last_error = None
@@ -64,11 +75,24 @@ def _execute_with_retry_and_fallback(contents: str, config: types.GenerateConten
                 )
                 if response and response.text:
                     return response
-            except (ServerError, Exception) as e:
+            except Exception as e:
                 last_error = e
-                # If error is a temporary 503 or transient failure, wait briefly and retry
-                time.sleep(1.5)
-                continue
+                if _is_permanent_or_exhausted(e):
+                    logger.warning(f"Model {model} permanent or quota error, switching to fallback model immediately: {e}")
+                    break
+
+                if _is_transient_error(e):
+                    if attempt == 0:
+                        backoff = 1.0 * (2 ** attempt)
+                        logger.warning(f"Model {model} transient error (attempt {attempt + 1}), retrying in {backoff}s: {e}")
+                        time.sleep(backoff)
+                        continue
+                    else:
+                        logger.warning(f"Model {model} transient error persisted after retry, falling back: {e}")
+                        break
+                else:
+                    logger.warning(f"Model {model} unexpected error, attempting fallback: {e}")
+                    break
 
     raise RuntimeError(
         f"Gemini API request failed across all candidate models ({', '.join(FALLBACK_MODELS)}): {last_error}"

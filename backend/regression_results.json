@@ -1,0 +1,82 @@
+{
+  "1. User Registration": {
+    "status": "PASS",
+    "details": "Registered user ID 2"
+  },
+  "2. User Login": {
+    "status": "PASS",
+    "details": "Login succeeded, JWT token received"
+  },
+  "3. JWT Authentication": {
+    "status": "PASS",
+    "details": "Valid token accepted, invalid/missing tokens rejected with 401"
+  },
+  "4. Resume PDF Upload": {
+    "status": "PASS",
+    "details": "PDF 99631 bytes uploaded successfully"
+  },
+  "5. PyMuPDF Text Extraction": {
+    "status": "PASS",
+    "details": "Extracted 4484 characters using fitz"
+  },
+  "6. Gemini Resume Analysis": {
+    "status": "PASS",
+    "details": "Summary: Second-year B.Tech student specializing in Artificial Intelligence & Machine Lea..."
+  },
+  "7. Skills Extraction": {
+    "status": "PASS",
+    "details": "Extracted 22 skills: ['Python', 'C', 'Java (Basic)', 'Supervised & Unsupervised Learning', 'Computer Vision']"
+  },
+  "8. Projects Extraction": {
+    "status": "PASS",
+    "details": "Extracted 4 projects: ['Handwritten Digit Recognition System (AI/ML + Web App)', 'Farm Intel (React.js + Tailwind CSS)']"
+  },
+  "9. ATS Scoring": {
+    "status": "PASS",
+    "details": "ATS Score: 85/100"
+  },
+  "10. Job Description Matching": {
+    "status": "PASS",
+    "details": "Match Score: 68/100, Matching Skills: ['Python', 'TensorFlow', 'Scikit-learn', 'Flask']"
+  },
+  "11. Missing Skill Detection": {
+    "status": "PASS",
+    "details": "Missing (Job): ['PyTorch', 'NLP', 'Large Language Models (LLMs)', 'FastAPI', 'PostgreSQL', 'Docker', 'Git', 'Model Evaluation Metrics'], Missing (Resume): ['Cloud platforms (AWS, GCP, Azure)', 'DevOps tools', 'Advanced software testing']"
+  },
+  "12. Improvement Suggestions": {
+    "status": "PASS",
+    "details": "Generated 3 suggestions: Include more quantitative metrics and KPIs in project descriptions to demonstrat..."
+  },
+  "13. CRI Calculation": {
+    "status": "PASS",
+    "details": "CRI: 81/100 (Excellent), Breakdown: {'ats_score': 85, 'job_match_score': 68, 'skills_score': 100, 'projects_score': 80, 'skill_coverage': 73}"
+  },
+  "14. Dashboard Rendering": {
+    "status": "PARTIAL / NEEDS ATTENTION",
+    "details": "Analysis dashboard renders completely in ResumeUpload.tsx (ScoreCards, CRI breakdown, skills, suggestions), BUT pages/Dashboard.tsx is an unrouted static stub file."
+  },
+  "15. Auto-indexing into RAG": {
+    "status": "PASS",
+    "details": "Indexed 2 docs with 13 chunks: ['summary', 'skills', 'projects', 'projects', 'projects', 'projects', 'experience', 'experience', 'experience', 'education', 'strengths_and_gaps', 'improvement_suggestions', 'job_description']"
+  },
+  "16. RAG Career Assistant": {
+    "status": "PASS",
+    "details": "Grounded response: Based on your resume, here are your main machine learning and Python-related skills:\n\n* **..."
+  },
+  "17. RAG Citations": {
+    "status": "PASS",
+    "details": "Returned 4 citations. Top: Target Job Description (job_description, Sim: 0.715)"
+  },
+  "18. RAG User Isolation": {
+    "status": "PASS",
+    "details": "Strict user_id isolation verified: 0% data leakage across users"
+  },
+  "19. Anti-Hallucination Behavior": {
+    "status": "PASS",
+    "details": "Properly refused to fabricate absent career information"
+  },
+  "20. Document Deletion": {
+    "status": "PASS",
+    "details": "Document deleted, vector chunks cascaded, cross-tenant deletion blocked"
+  }
+}
