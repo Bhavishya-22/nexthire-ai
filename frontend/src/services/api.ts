@@ -43,9 +43,12 @@ api.interceptors.request.use((config) => {
 export interface ResumeAnalysis {
   summary: string;
   skills: string[];
+  technologies?: string[];
   projects: string[];
   experience: string[];
   education: string[];
+  certifications?: string[];
+  achievements?: string[];
   strengths: string[];
   missing_skills: string[];
   improvement_suggestions: string[];
@@ -61,6 +64,12 @@ export interface JobMatch {
   recommendations: string[];
 }
 
+export interface CRIFactor {
+  score: number;
+  max: number;
+  label: string;
+}
+
 export interface CRI {
   cri_score: number;
   readiness_level: string;
@@ -70,6 +79,15 @@ export interface CRI {
     skills_score: number;
     projects_score: number;
     skill_coverage: number;
+  };
+  factors_7?: {
+    resume_intelligence: CRIFactor;
+    skill_intelligence: CRIFactor;
+    project_intelligence: CRIFactor;
+    interview_readiness: CRIFactor;
+    deployment_readiness: CRIFactor;
+    career_goal_alignment: CRIFactor;
+    continuous_learning: CRIFactor;
   };
 }
 
@@ -118,11 +136,15 @@ export interface DocumentListResponse {
   total_chunks: number;
 }
 
-// --- Auth Types ---
+// --- Auth & User Profile Types ---
 export interface UserProfile {
   id: number;
   full_name: string;
   email: string;
+  onboarding_completed?: boolean;
+  target_role?: string;
+  resume_filename?: string;
+  has_profile?: boolean;
 }
 
 export interface AuthResponse {
@@ -132,6 +154,35 @@ export interface AuthResponse {
   token_type: string;
   user: UserProfile;
 }
+
+// --- Onboarding Specific Types ---
+export interface OnboardingParseResponse {
+  success: boolean;
+  filename: string;
+  full_name: string;
+  target_role: string;
+  extracted_profile: ResumeAnalysis;
+  resume_text: string;
+}
+
+export interface ConfirmProfilePayload {
+  full_name: string;
+  target_role: string;
+  filename: string;
+  resume_text: string;
+  profile: ResumeAnalysis;
+}
+
+export interface ProfileResponse {
+  success: boolean;
+  has_profile: boolean;
+  onboarding_completed: boolean;
+  target_role?: string;
+  resume_filename?: string;
+  user?: UserProfile;
+  analysis_data?: AnalysisResponse["data"];
+}
+
 
 // --- Resume Analysis API Method (Preserved) ---
 export const analyzeResume = async (
@@ -235,6 +286,63 @@ export const getCurrentUser = async (): Promise<UserProfile | null> => {
 
 export const logoutUser = (): void => {
   clearAuthToken();
+};
+
+// --- Onboarding & Career Profile API Methods ---
+export const parseOnboardingResume = async (
+  file: File,
+  fullName?: string,
+  targetRole?: string
+): Promise<OnboardingParseResponse> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (fullName && fullName.trim()) {
+    formData.append("full_name", fullName.trim());
+  }
+  if (targetRole && targetRole.trim()) {
+    formData.append("target_role", targetRole.trim());
+  }
+
+  const response = await api.post<OnboardingParseResponse>(
+    "/api/onboarding/parse-resume",
+    formData
+  );
+  return response.data;
+};
+
+export const confirmOnboardingProfile = async (
+  payload: ConfirmProfilePayload
+): Promise<any> => {
+  const response = await api.post("/api/onboarding/confirm-profile", payload);
+  return response.data;
+};
+
+export const analyzeAndOnboard = async (
+  file: File,
+  fullName: string,
+  targetRole: string
+): Promise<{ success: boolean; user: UserProfile; data: AnalysisResponse["data"] }> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("full_name", fullName.trim());
+  if (targetRole.trim()) {
+    formData.append("target_role", targetRole.trim());
+  }
+
+  const response = await api.post<{ success: boolean; user: UserProfile; data: AnalysisResponse["data"] }>(
+    "/api/onboarding/analyze-and-onboard",
+    formData
+  );
+  return response.data;
+};
+
+export const getUserProfile = async (): Promise<ProfileResponse | null> => {
+  try {
+    const response = await api.get<ProfileResponse>("/api/profile");
+    return response.data;
+  } catch {
+    return null;
+  }
 };
 
 export default api;

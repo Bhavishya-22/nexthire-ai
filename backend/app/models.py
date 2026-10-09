@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 
@@ -15,9 +15,14 @@ class User(Base):
     full_name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
+    onboarding_completed = Column(Boolean, default=False, nullable=False)
+    target_role = Column(String(255), nullable=True)
+    resume_filename = Column(String(255), nullable=True)
+    profile_data = Column(JSON, nullable=True)
 
     documents = relationship("CareerDocument", back_populates="user", cascade="all, delete-orphan")
     chunks = relationship("CareerKnowledgeChunk", back_populates="user", cascade="all, delete-orphan")
+
 
 
 class CareerDocument(Base):
