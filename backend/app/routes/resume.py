@@ -45,10 +45,13 @@ async def upload_resume(
     try:
         contents = await file.read()
 
-        with open(file_path, "wb") as f:
-            f.write(contents)
+        try:
+            with open(file_path, "wb") as f:
+                f.write(contents)
+        except Exception as disk_err:
+            logger.warning(f"Could not persist to local uploads directory ({disk_err}). Continuing with in-memory extraction.")
 
-        resume_text = extract_text_from_pdf(file_path)
+        resume_text = extract_text_from_pdf(contents)
 
         if not resume_text:
             raise HTTPException(

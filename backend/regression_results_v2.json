@@ -1,7 +1,7 @@
 {
   "1. Registration": {
     "status": "PASS",
-    "details": "Registered user ID 20"
+    "details": "Registered user ID 23"
   },
   "2. Login": {
     "status": "PASS",
@@ -25,15 +25,15 @@
   },
   "7. Skills": {
     "status": "PASS",
-    "details": "13 skills extracted: ['Programming Languages', 'Machine Learning', 'Supervised & Unsupervised Learning', 'Computer Vision']"
+    "details": "14 skills extracted: ['Python', 'C', 'Java', 'Supervised & Unsupervised Learning']"
   },
   "8. Projects": {
     "status": "PASS",
-    "details": "4 projects extracted: ['Handwritten Digit Recognition System (AI/ML + Web App)', 'Farm Intel (React.js + Tailwind CSS)']"
+    "details": "4 projects extracted: ['Handwritten Digit Recognition System', 'Farm Intel']"
   },
   "9. Experience": {
     "status": "PASS",
-    "details": "Experience: 4 items, Education: 3 items"
+    "details": "Experience: 5 items, Education: 3 items"
   },
   "10. ATS": {
     "status": "PASS",
@@ -41,7 +41,7 @@
   },
   "11. Job matching": {
     "status": "PASS",
-    "details": "Match Score: 62/100, Matching Skills: ['Python', 'TensorFlow', 'Scikit-learn']"
+    "details": "Match Score: 65/100, Matching Skills: ['Python', 'TensorFlow', 'Scikit-learn']"
   },
   "12. Skill gaps": {
     "status": "PASS",
@@ -49,11 +49,11 @@
   },
   "13. Suggestions": {
     "status": "PASS",
-    "details": "2 suggestions: Include more quantitative metrics in project descriptions to highlight scale and..."
+    "details": "3 suggestions: Quantify project impact with specific metrics or performance improvements..."
   },
   "14. CRI": {
     "status": "PASS",
-    "details": "CRI: 80/100 (Excellent)"
+    "details": "CRI: 81/100 (Excellent)"
   },
   "15. Dashboard": {
     "status": "PASS",
@@ -61,15 +61,15 @@
   },
   "16. Automatic RAG indexing": {
     "status": "PASS",
-    "details": "Indexed 2 documents with 17 vector chunks"
+    "details": "Indexed 2 documents with 18 vector chunks"
   },
   "17. RAG Assistant": {
     "status": "PASS",
-    "details": "Answer: Based on your stored Career Knowledge Base, here are your core machine learning skills and..."
+    "details": "Answer: Based on your Career Knowledge Base, here are your core machine learning skills and web te..."
   },
   "18. RAG citations": {
     "status": "PASS",
-    "details": "Returned 4 citations. Top similarity: 0.733"
+    "details": "Returned 4 citations. Top similarity: 0.721"
   },
   "19. User isolation": {
     "status": "PASS",

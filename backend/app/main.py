@@ -27,15 +27,19 @@ app = FastAPI(
 # Configure CORS origins from environment variable or standard local dev ports
 allowed_origins_raw = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000"
+    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,https://nexthire-ai.vercel.app"
 )
 allowed_origins = [
     origin.strip() for origin in allowed_origins_raw.split(",") if origin.strip()
 ]
 
+# Allow Vercel deployments and preview URLs (e.g. https://*.vercel.app)
+allow_origin_regex = os.getenv("ALLOWED_ORIGIN_REGEX", r"https://.*\.vercel\.app")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins if "*" not in allowed_origins else ["*"],
+    allow_origin_regex=allow_origin_regex if allow_origin_regex else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
