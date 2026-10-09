@@ -52,6 +52,15 @@ def calculate_cri(
     else:
         readiness_level = "Needs Improvement"
 
+    # 7-factor detailed intelligence breakdown (ELEVIQ specification)
+    resume_int = min(max(1, round((ats / 100.0) * 20)), 20)
+    skill_int = min(max(1, round((skills_score / 100.0) * 20)), 20)
+    project_int = min(max(1, round((projects_score / 100.0) * 20)), 20)
+    interview_int = min(max(1, round((job_match / 100.0) * 15)), 15)
+    deployment_int = min(max(1, round((projects_score / 100.0) * 10)), 10)
+    goal_int = min(max(1, round((skill_coverage / 100.0) * 10)), 10)
+    learning_int = min(max(1, round((skills_score / 100.0) * 5)), 5)
+
     return {
         "cri_score": cri_score,
         "readiness_level": readiness_level,
@@ -61,5 +70,15 @@ def calculate_cri(
             "skills_score": round(skills_score),
             "projects_score": round(projects_score),
             "skill_coverage": round(skill_coverage)
+        },
+        "factors_7": {
+            "resume_intelligence": {"score": resume_int, "max": 20, "label": "Resume Intelligence"},
+            "skill_intelligence": {"score": skill_int, "max": 20, "label": "Skill Intelligence"},
+            "project_intelligence": {"score": project_int, "max": 20, "label": "Project Intelligence"},
+            "interview_readiness": {"score": interview_int, "max": 15, "label": "Interview Readiness"},
+            "deployment_readiness": {"score": deployment_int, "max": 10, "label": "Deployment Readiness"},
+            "career_goal_alignment": {"score": goal_int, "max": 10, "label": "Career Goal Alignment"},
+            "continuous_learning": {"score": learning_int, "max": 5, "label": "Continuous Learning"}
         }
     }
+

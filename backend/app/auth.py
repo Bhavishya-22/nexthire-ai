@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -16,6 +17,8 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 init_db()
 
+EMAIL_REGEX = re.compile(r"^[\w\.-]+@[\w\.-]+\.\w+$")
+
 
 class RegisterRequest(BaseModel):
     full_name: str
@@ -26,6 +29,18 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+
+def _serialize_user(user: User) -> dict:
+    return {
+        "id": user.id,
+        "full_name": user.full_name,
+        "email": user.email,
+        "onboarding_completed": bool(user.onboarding_completed),
+        "target_role": user.target_role,
+        "resume_filename": user.resume_filename,
+        "has_profile": bool(user.profile_data),
+    }
 
 
 def get_authenticated_user(
@@ -78,14 +93,27 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     if not request.email or not request.password or not request.full_name:
         raise HTTPException(status_code=400, detail="All fields are required")
 
-    existing = db.query(User).filter(User.email == request.email.lower().strip()).first()
+    email = request.email.lower().strip()
+    full_name = request.full_name.strip()
+
+    if not EMAIL_REGEX.match(email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address (e.g. yourname@gmail.com)")
+
+    if len(full_name) < 2:
+        raise HTTPException(status_code=400, detail="Full name must be at least 2 characters long")
+
+    if len(request.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long")
+
+    existing = db.query(User).filter(User.email == email).first()
     if existing:
-        raise HTTPException(status_code=400, detail="User with this email already exists")
+        raise HTTPException(status_code=400, detail="An account with this email already exists")
 
     new_user = User(
-        full_name=request.full_name.strip(),
-        email=request.email.lower().strip(),
+        full_name=full_name,
+        email=email,
         password=hash_password(request.password),
+        onboarding_completed=False,
     )
     db.add(new_user)
     db.commit()
@@ -98,17 +126,17 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
         "message": "User registered successfully",
         "access_token": token,
         "token_type": "bearer",
-        "user": {
-            "id": new_user.id,
-            "full_name": new_user.full_name,
-            "email": new_user.email,
-        },
+        "user": _serialize_user(new_user),
     }
 
 
 @router.post("/login")
 def login(request: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == request.email.lower().strip()).first()
+    if not request.email or not request.password:
+        raise HTTPException(status_code=400, detail="Email and password are required")
+
+    email = request.email.lower().strip()
+    user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(request.password, user.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
@@ -119,11 +147,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
         "message": "Login successful",
         "access_token": token,
         "token_type": "bearer",
-        "user": {
-            "id": user.id,
-            "full_name": user.full_name,
-            "email": user.email,
-        },
+        "user": _serialize_user(user),
     }
 
 
@@ -131,9 +155,6 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 def get_current_user_info(user: User = Depends(get_authenticated_user)):
     return {
         "success": True,
-        "user": {
-            "id": user.id,
-            "full_name": user.full_name,
-            "email": user.email,
-        },
+        "user": _serialize_user(user),
     }
+

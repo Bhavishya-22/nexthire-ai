@@ -1,8 +1,8 @@
 import { type UserProfile } from "../services/api";
 
 interface NavbarProps {
-  currentView?: "home" | "dashboard" | "upload" | "assistant";
-  onViewChange?: (view: "home" | "dashboard" | "upload" | "assistant") => void;
+  currentView?: "home" | "dashboard" | "upload" | "assistant" | "onboarding";
+  onViewChange?: (view: "home" | "dashboard" | "upload" | "assistant" | "onboarding") => void;
   onUploadClick?: () => void;
   onHomeClick?: () => void;
   isUploadActive?: boolean;
@@ -24,7 +24,7 @@ export default function Navbar({
   // Support both new view switcher and legacy onHomeClick/onUploadClick
   const activeView = isUploadActive !== undefined ? (isUploadActive ? "upload" : "home") : currentView;
 
-  const navigateTo = (view: "home" | "dashboard" | "upload" | "assistant") => {
+  const navigateTo = (view: "home" | "dashboard" | "upload" | "assistant" | "onboarding") => {
     if (onViewChange) {
       onViewChange(view);
     } else {
@@ -32,6 +32,7 @@ export default function Navbar({
       if (view === "upload" && onUploadClick) onUploadClick();
     }
   };
+
 
   return (
     <header
@@ -137,6 +138,27 @@ export default function Navbar({
           <span>🧠</span> AI Assistant (RAG)
         </button>
 
+        {currentUser && !currentUser.onboarding_completed && (
+          <button
+            onClick={() => navigateTo("onboarding")}
+            style={{
+              background: activeView === "onboarding" ? "#ffedd5" : "#fff7ed",
+              color: "#c2410c",
+              border: "1px solid #fdba74",
+              fontSize: "14px",
+              fontWeight: 700,
+              cursor: "pointer",
+              padding: "8px 14px",
+              borderRadius: "10px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            <span>📝</span> Complete Onboarding
+          </button>
+        )}
+
         <button
           onClick={() => navigateTo("upload")}
           style={{
@@ -158,6 +180,7 @@ export default function Navbar({
         </button>
 
         {/* User Auth Status */}
+
         {currentUser ? (
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "8px" }}>
             <span

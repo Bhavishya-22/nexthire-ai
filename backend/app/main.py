@@ -14,6 +14,8 @@ from app.routes.resume_analysis import router as resume_analysis_router
 from app.routes.job import router as job_router
 from app.routes.rag import router as rag_router
 from app.auth import router as auth_router
+from app.routes.onboarding import router as onboarding_router
+from app.routes.career_dashboard import router as career_dashboard_router
 
 
 app = FastAPI(
@@ -49,6 +51,9 @@ app.include_router(full_analysis_router)
 app.include_router(job_router)
 app.include_router(rag_router)
 app.include_router(auth_router)
+app.include_router(onboarding_router)
+app.include_router(career_dashboard_router)
+
 
 
 @app.get("/")

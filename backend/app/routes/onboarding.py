@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, List
+from typing import Optional, List, Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -214,6 +214,143 @@ def get_user_profile(
         "user": _serialize_user(current_user),
         "analysis_data": current_user.profile_data if has_profile else None
     }
+
+
+class UpdateProfileRequest(BaseModel):
+    full_name: Optional[str] = None
+    target_role: Optional[str] = None
+    experience_level: Optional[str] = None
+    college: Optional[str] = None
+    degree: Optional[str] = None
+    grad_year: Optional[str] = None
+    education_details: Optional[str] = None
+    career_goal: Optional[str] = None
+    preferred_locations: Optional[List[str]] = None
+    preferred_job_type: Optional[str] = None
+    learning_hours_per_week: Optional[int] = None
+    technical_skills: Optional[List[str]] = None
+    soft_skills: Optional[List[str]] = None
+    certifications: Optional[List[str]] = None
+    projects: Optional[List[Any]] = None
+    experience: Optional[List[Any]] = None
+
+
+@router.put("/profile")
+def update_user_profile(
+    request: UpdateProfileRequest,
+    current_user: User = Depends(get_authenticated_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Updates authenticated user's personal details, preferences, skills, and projects.
+    Enforces user ownership, recalculates CRI consistently, updates persisted profile_data,
+    and returns updated user and profile bundle.
+    """
+    try:
+        if request.full_name and request.full_name.strip():
+            current_user.full_name = request.full_name.strip()
+
+        if request.target_role is not None:
+            current_user.target_role = request.target_role.strip()
+
+        # Update profile_data
+        profile_data = dict(current_user.profile_data or {})
+        resume_analysis = dict(profile_data.get("resume_analysis") or {})
+
+        prefs = dict(profile_data.get("preferences") or {})
+        if request.experience_level is not None:
+            prefs["experience_level"] = request.experience_level.strip()
+        if request.college is not None:
+            prefs["college"] = request.college.strip()
+        if request.degree is not None:
+            prefs["degree"] = request.degree.strip()
+        if request.grad_year is not None:
+            prefs["grad_year"] = request.grad_year.strip()
+        if request.education_details is not None:
+            prefs["education_details"] = request.education_details.strip()
+        if request.career_goal is not None:
+            prefs["career_goal"] = request.career_goal.strip()
+        if request.preferred_locations is not None:
+            prefs["preferred_locations"] = [loc.strip() for loc in request.preferred_locations if loc.strip()]
+        if request.preferred_job_type is not None:
+            prefs["preferred_job_type"] = request.preferred_job_type.strip()
+        if request.learning_hours_per_week is not None:
+            prefs["learning_hours_per_week"] = max(1, request.learning_hours_per_week)
+        if request.soft_skills is not None:
+            prefs["soft_skills"] = [s.strip() for s in request.soft_skills if s.strip()]
+        profile_data["preferences"] = prefs
+
+        if request.technical_skills is not None:
+            clean_skills = [s.strip() for s in request.technical_skills if s.strip()]
+            resume_analysis["skills"] = clean_skills
+
+        if request.certifications is not None:
+            clean_certs = [c.strip() for c in request.certifications if c.strip()]
+            resume_analysis["certifications"] = clean_certs
+
+        if request.projects is not None:
+            resume_analysis["projects"] = request.projects
+
+        if request.experience is not None:
+            resume_analysis["experience"] = request.experience
+
+        if request.college or request.degree or request.education_details:
+            edu_entry = " - ".join(filter(None, [request.degree, request.college, request.grad_year]))
+            if edu_entry:
+                resume_analysis["education"] = [edu_entry]
+
+        profile_data["resume_analysis"] = resume_analysis
+        profile_data["target_role"] = current_user.target_role
+
+        # Recalculate CRI consistently
+        ats_score = resume_analysis.get("ats_score", 85)
+        skills_count = len(resume_analysis.get("skills", []))
+        projects_count = len(resume_analysis.get("projects", []))
+        missing_count = len(resume_analysis.get("missing_skills", []))
+        job_match = profile_data.get("job_match")
+        job_match_score = job_match.get("match_score", ats_score) if isinstance(job_match, dict) and "match_score" in job_match else ats_score
+
+        updated_cri = compute_cri(
+            ats_score=ats_score,
+            job_match_score=job_match_score,
+            skills_count=skills_count,
+            projects_count=projects_count,
+            missing_skills_count=missing_count
+        )
+        profile_data["cri"] = updated_cri
+
+        current_user.profile_data = profile_data
+        db.add(current_user)
+        db.commit()
+        db.refresh(current_user)
+
+        # Index career goal into RAG if updated
+        try:
+            if current_user.target_role or prefs.get("career_goal"):
+                index_generic_document(
+                    db=db,
+                    user_id=current_user.id,
+                    title=f"User Career Profile & Goals: {current_user.target_role or 'General'}",
+                    doc_type="career_goal",
+                    content=f"User Role: {current_user.target_role}\nCareer Goal: {prefs.get('career_goal', '')}\nKey Skills: {', '.join(resume_analysis.get('skills', [])[:10])}",
+                    metadata={"source": "edit_profile"}
+                )
+        except Exception as rag_err:
+            logger.warning(f"Failed to update RAG on profile edit: {rag_err}")
+
+        return {
+            "success": True,
+            "message": "Career profile updated successfully",
+            "user": _serialize_user(current_user),
+            "data": current_user.profile_data
+        }
+    except Exception as e:
+        logger.error(f"Failed to update profile: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update profile: {str(e)}"
+        )
 
 
 @router.post("/onboarding/analyze-and-onboard")

@@ -25,10 +25,12 @@ interface ChatMessage {
 }
 
 const SUGGESTED_PROMPTS = [
-  "What are my top technical skills and core strengths?",
-  "How should I explain my primary project in an interview?",
-  "What critical skill gaps should I focus on closing next?",
-  "Draft a tailored 60-second career pitch based on my experience.",
+  "What skills are present in my resume?",
+  "Which important skills are missing for my target role?",
+  "Explain my resume analysis.",
+  "Which projects in my resume support my target role?",
+  "What should I learn next?",
+  "How can I improve my career readiness?",
 ];
 
 export default function CareerAssistant({

@@ -10,10 +10,21 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
+    onboarding_completed BOOLEAN DEFAULT FALSE,
+    target_role VARCHAR(255),
+    resume_filename VARCHAR(255),
+    profile_data JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- Migration for existing users table
+ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS target_role VARCHAR(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS resume_filename VARCHAR(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_data JSONB;
+
 
 -- 3. Career Documents Table (Parent documents: resumes, notes, goals, job descriptions)
 CREATE TABLE IF NOT EXISTS career_documents (

@@ -31,6 +31,21 @@ class ResumeAnalysis(BaseModel):
         description="Education details found in the resume."
     )
 
+    certifications: list[str] = Field(
+        default_factory=list,
+        description="Certifications, online credentials, or licenses mentioned in the resume."
+    )
+
+    achievements: list[str] = Field(
+        default_factory=list,
+        description="Key honors, awards, hackathon wins, or notable academic/professional achievements."
+    )
+
+    technologies: list[str] = Field(
+        default_factory=list,
+        description="Tools, frameworks, platforms, and specific technologies explicitly mentioned."
+    )
+
     strengths: list[str] = Field(
         default_factory=list,
         description="Strong points of the candidate based on the resume."
@@ -52,6 +67,7 @@ class ResumeAnalysis(BaseModel):
         le=100,
         description="Estimated ATS compatibility score from 0 to 100."
     )
+
 
 
 class JobMatchResult(BaseModel):

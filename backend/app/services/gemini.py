@@ -21,9 +21,11 @@ MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 # Candidate fallback models in case the primary encounters temporary demand spikes
 FALLBACK_MODELS = [
     MODEL_NAME,
-    "gemini-3.8-flash",
     "gemini-3.5-flash-lite",
     "gemini-flash-latest",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+    "gemini-3.8-flash",
 ]
 # Remove duplicates while preserving order
 FALLBACK_MODELS = list(dict.fromkeys(FALLBACK_MODELS))
@@ -109,11 +111,13 @@ Analyze ONLY the information present in the resume.
 
 Do NOT invent:
 - skills
+- technologies
 - projects
 - companies
 - job titles
 - education
 - certifications
+- achievements
 - experience
 
 If information is not present, return an empty list.
@@ -126,26 +130,36 @@ Create a concise professional summary of the candidate.
 2. SKILLS
 Extract technical and professional skills explicitly mentioned in the resume.
 
-3. PROJECTS
+3. TECHNOLOGIES
+Extract specific tools, frameworks, programming languages, libraries, databases, and cloud platforms explicitly mentioned.
+
+4. PROJECTS
 Extract the important projects mentioned in the resume.
 
-4. EXPERIENCE
+5. EXPERIENCE
 Extract internships, jobs, research experience, or relevant practical experience.
 
-5. EDUCATION
+6. EDUCATION
 Extract degrees, institutions, fields of study, and relevant academic information.
 
-6. STRENGTHS
+7. CERTIFICATIONS
+Extract certifications, online courses, credentials, or licenses mentioned in the resume.
+
+8. ACHIEVEMENTS
+Extract honors, awards, hackathon rankings, publications, or notable milestones.
+
+9. STRENGTHS
 Identify the strongest aspects of the candidate's profile.
 
-7. MISSING SKILLS
+10. MISSING SKILLS
 Identify skills that appear weak or absent based ONLY on the candidate's current profile.
 
-8. IMPROVEMENT SUGGESTIONS
+11. IMPROVEMENT SUGGESTIONS
 Give practical suggestions for improving the resume and career profile.
 
-9. ATS SCORE
+12. ATS SCORE
 Give an estimated ATS compatibility score from 0 to 100.
+
 
 Consider:
 - clear formatting
