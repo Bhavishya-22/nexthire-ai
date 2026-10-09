@@ -1,207 +1,391 @@
-# 🚀 NextHire AI
+# 🚀 NextHire AI — AI Career Intelligence Platform
 
-### AI-Powered Career Intelligence Platform with Personalized RAG
+**Your AI-powered career intelligence platform that analyzes your resume, evaluates your career readiness, identifies skill gaps, and helps you move toward your target role.**
 
-NextHire AI is a full-stack **AI-powered Career Intelligence Platform** that helps students and job seekers understand their career readiness through intelligent resume analysis, ATS evaluation, skill-gap detection, job matching, and a **Personalized Career Knowledge Base powered by RAG (Retrieval-Augmented Generation)**.
+NextHire AI combines Generative AI, resume intelligence, personalized recommendations, and Retrieval-Augmented Generation (RAG) to help users understand their current skills and make informed career decisions.
 
-The platform analyzes a user's resume, extracts relevant skills and projects, compares the profile with job requirements, identifies missing skills, generates a **Career Readiness Index (CRI)**, and indexes the candidate's career data into an isolated vector database so candidates can query their career intelligence assistant with zero hallucination.
-
----
-
-## 🎯 Problem Statement
-
-Job seekers often struggle to understand whether their resume is ATS-friendly, how well their skills match a specific job, and which skills they need to improve. Furthermore, general-purpose AI chat assistants lack personalized, verified context about a candidate's actual projects, coursework, and career goals, leading to generic advice or fabricated details.
-
-**NextHire AI** brings resume intelligence, skill-gap detection, job matching, and a **private Career Knowledge Base (RAG)** together into a single, cohesive platform.
+🔗 **GitHub Repository:** [Bhavishya-22/nexthire-ai](https://github.com/Bhavishya-22/nexthire-ai)
 
 ---
 
-## 💡 Solution & Complete Pipeline
+## 📌 Overview
 
-NextHire AI follows an intelligent career analysis and knowledge pipeline:
+Choosing the right career path requires more than simply uploading a resume. Candidates need to understand their strengths, identify missing skills, evaluate their readiness for a target role, and determine what to learn next.
 
-```text
-User Career Data (Resume / Target Job / Goals)
-                  │
-                  ▼
-          PyMuPDF Extraction
-                  │
-                  ▼
-          Structured AI Analysis
-  (Skills, Projects, Experience, ATS, CRI)
-                  │
-                  ▼
-         Semantic Chunking Engine
-                  │
-                  ▼
-   Gemini Embeddings (gemini-embedding-001)
-                  │
-                  ▼
-   PostgreSQL / Supabase pgvector Store
-                  │
-       ┌──────────┴──────────┐
-       │   Semantic Search   │ (Top-K Cosine Distance)
-       └──────────┬──────────┘
-                  │
-                  ▼
-       Relevant Context Retrieval
-                  │
-                  ▼
-     Gemini Grounded Assistant
-     (Strict Anti-Hallucination + Source Citations)
-                  │
-                  ▼
-Personalized Career Intelligence & Interactive Dashboard
-```
+NextHire AI addresses these challenges through an AI-powered career intelligence platform that transforms resume data into actionable career insights.
+
+The application follows a simple, personalized workflow:
+
+**Sign In → Resume Onboarding → Career Intelligence Dashboard**
+
+1. **Sign In:** Authenticate using your email address and password.
+2. **Resume Onboarding:** Enter your name and target job role, then upload your resume in PDF format.
+3. **AI Resume Analysis:** Extract relevant career information and analyze skills, projects, education, and experience.
+4. **Career Intelligence Dashboard:** Explore your Career Readiness Index (CRI), skill gaps, resume insights, and recommendations.
+5. **AI Career Assistant:** Ask questions about your career profile and retrieve relevant information from your personal career knowledge base.
+
+Returning users can access their existing dashboard after signing in, provided their profile and onboarding are complete.
 
 ---
 
-## ⭐ Implemented Features
+## ✨ Key Features
 
-* 🔐 **User Registration & Login**: PBKDF2-HMAC-SHA256 password hashing.
-* 🔑 **JWT Authentication**: HS256 JWT tokens isolating each user's career data.
-* 📄 **Resume PDF Upload**: Drag-and-drop / file selector with format validation.
-* 📝 **Resume Text Extraction**: High-fidelity multi-page parsing via PyMuPDF (`fitz`).
-* 🤖 **AI-Powered Resume Analysis**: Structured profile extraction powered by Google Gemini.
-* 🧠 **Skill & Project Extraction**: Technical skills, soft skills, projects, and work history.
-* 📊 **ATS Score**: Parseability assessment and keyword optimization feedback.
-* 🧩 **Skill Gap Detection**: Highlighting missing technical competencies for target roles.
-* 💡 **AI-Based Improvement Suggestions**: Actionable recommendations.
-* 💼 **Job Description Matching**: Comparing resumes against target job descriptions.
-* 🎯 **Career Readiness Index (CRI)**: 5-factor weighted algorithm (ATS, Job Match, Skills volume, Projects volume, Skill coverage).
-* 🗂️ **Personalized Career Knowledge Base (RAG)**:
-  * Automatic indexing of analyzed resumes and target job descriptions for authenticated users.
-  * Manual ingestion of career goals, notes, certifications, and target jobs.
-  * 768-dimensional vector embeddings with isolated user tenancy.
-  * Document and vector chunk deletion with cascading database cleanup.
-* 💬 **AI Career Assistant (RAG Chat)**:
-  * Grounded question-answering based strictly on user's stored career data.
-  * **Anti-Hallucination Guardrails**: Explicitly refuses to invent or fabricate information if details are absent from the knowledge base.
-  * **Source Citations**: Displays exact source documents, sections, and similarity scores.
+### 🔐 1. User Authentication
+
+* Email and password-based authentication.
+* User registration and sign-in.
+* Secure password hashing and JWT-based authentication.
+* Protected application routes.
+* Personalized user profiles and sign-out functionality.
+
+### 📄 2. Resume Upload and AI Analysis
+
+* Upload resumes in PDF format.
+* Extract resume text using PyMuPDF.
+* Analyze resume content using Google's Gemini models.
+* Identify relevant skills, projects, education, and work experience where available.
+* Generate structured resume insights.
+* Save resume analysis results for personalized career tracking.
+
+### 🎯 3. Career Readiness Index (CRI)
+
+The Career Readiness Index provides an overview of a user's preparedness for their target career.
+
+The existing CRI calculation considers factors such as:
+
+* ATS score
+* Job match score
+* Skills volume
+* Projects volume
+* Skill coverage
+
+The dashboard presents career-readiness information to help users understand their strengths and areas for improvement.
+
+### 🧠 4. Skill Gap Analysis
+
+* Identify skills relevant to the target role.
+* Highlight missing or underrepresented skills.
+* Provide AI-generated suggestions to address skill gaps.
+* Help users prioritize their career development efforts.
+
+### 💼 5. Job Description Matching
+
+* Compare resume information with a job description.
+* Identify relevant skills and potential gaps.
+* Evaluate alignment between a candidate's profile and job requirements.
+* Use matching insights to support more targeted preparation.
+
+### 🤖 6. AI Career Assistant — RAG
+
+NextHire AI incorporates Retrieval-Augmented Generation (RAG) to provide context-aware responses grounded in a user's career documents.
+
+Key capabilities include:
+
+* Ingest career documents into a personal knowledge base.
+* Generate semantic embeddings for document chunks.
+* Retrieve relevant information using vector similarity search.
+* Answer career-related questions using retrieved context.
+* Provide source citations where supported.
+* Maintain user-level separation when retrieving career information.
+* Support document listing and deletion.
+
+The RAG architecture uses PostgreSQL with pgvector for vector storage and Google's embedding models for semantic retrieval.
+
+### 📊 7. Personalized Career Dashboard
+
+The dashboard brings career insights together in one place, including:
+
+* Personalized welcome and target role.
+* Career Readiness Index.
+* Resume analysis results.
+* Skills and project insights.
+* Skill-gap recommendations.
+* Job matching information.
+* Career development suggestions.
+* Access to the AI Career Assistant.
+
+Dashboard sections should reflect actual saved user data and available functionality rather than fabricated scores or sample progress.
 
 ---
 
 ## 🛠️ Tech Stack
 
-### Frontend
-* React 19, TypeScript, Vite
-* Framer Motion, Lucide React, Axios
+| Layer             | Technologies                             |
+| ----------------- | ---------------------------------------- |
+| Frontend          | React, TypeScript, Vite                  |
+| UI and Styling    | Tailwind CSS, Framer Motion, Lucide      |
+| API Communication | Axios                                    |
+| Backend           | Python, FastAPI                          |
+| Authentication    | JWT, PBKDF2-HMAC-SHA256 password hashing |
+| Database          | PostgreSQL, SQLAlchemy                   |
+| Vector Database   | pgvector                                 |
+| AI and LLM        | Google Gemini API                        |
+| Embeddings        | `gemini-embedding-001`                   |
+| Resume Processing | PyMuPDF                                  |
+| Deployment        | Vercel, Render, Supabase                 |
 
-### Backend
-* Python 3.10+, FastAPI, Uvicorn
-* SQLAlchemy 2.0 ORM
-
-### Database & Vector Store
-* **PostgreSQL + pgvector** (Production on Supabase)
-* SQLite fallback for local development / testing
-
-### AI, Embeddings & RAG
-* **Google Gemini API** (`google-genai` SDK)
-* **Generation Model**: `gemini-3.8-flash` (fallback: `gemini-3.5-flash-lite`, `gemini-flash-latest`)
-* **Embedding Model**: `gemini-embedding-001` (768 dimensions)
-* **Vector Index**: HNSW cosine distance (`vector_cosine_ops`)
-
-### PDF Processing
-* PyMuPDF (`pymupdf`)
-
-### Deployment Ready
-* **Frontend**: Vercel (`vercel.json`)
-* **Backend**: Render (`render.yaml`, `Procfile`)
-* **Database**: Supabase PostgreSQL (`database/schema.sql`)
+The project also supports an SQLite fallback for local development, subject to the existing database configuration.
 
 ---
 
-## 🔑 Environment Variables
+## 🏗️ Architecture
 
-### Backend (`backend/.env`)
-
-```env
-# Gemini API Key (Required)
-GEMINI_API_KEY=your_gemini_api_key_here
-
-# Gemini Generation Model
-GEMINI_MODEL=gemini-3.8-flash
-
-# Gemini Embedding Model & Vector Dimension
-GEMINI_EMBEDDING_MODEL=gemini-embedding-001
-EMBEDDING_DIMENSION=768
-
-# Database URL (PostgreSQL / Supabase; falls back to sqlite:///./nexthire.db if omitted)
-DATABASE_URL=postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres
-
-# CORS Allowed Origins (comma-separated URLs)
-ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://your-frontend.vercel.app
-
-# JWT Authentication Secret
-JWT_SECRET_KEY=your_super_secret_jwt_key_here
+```text
+                         NextHire AI
+                              |
+                              v
+                    User Authentication
+                              |
+                              v
+                       Resume Onboarding
+                  (Name + Target Role + PDF)
+                              |
+                              v
+                       FastAPI Backend
+                              |
+                 +------------+------------+
+                 |            |            |
+                 v            v            v
+          PDF Extraction   Gemini AI    Database
+                 |            |            |
+                 +------------+------------+
+                              |
+                              v
+                     Resume Intelligence
+                              |
+                 +------------+------------+
+                 |            |            |
+                 v            v            v
+                CRI       Skill Gaps    Job Matching
+                 |            |            |
+                 +------------+------------+
+                              |
+                              v
+                   Career Intelligence
+                         Dashboard
+                              |
+                              v
+                    AI Career Assistant
+                              |
+                              v
+                     RAG Retrieval Layer
+                              |
+                              v
+                    PostgreSQL + pgvector
 ```
 
-### Frontend (`frontend/.env`)
+---
 
-```env
-# Backend API Base URL
-VITE_API_BASE_URL=http://127.0.0.1:8000
+## 📂 Project Structure
+
+The repository is organized into frontend, backend, and database-related components.
+
+```text
+nexthire-ai/
+├── backend/
+│   ├── app/
+│   ├── requirements.txt
+│   └── ...
+├── frontend/
+│   ├── src/
+│   ├── package.json
+│   └── ...
+├── database/
+├── .gitignore
+├── README.md
+└── render.yaml
 ```
 
----
-
-## 🚀 API Endpoints
-
-### Authentication
-* `POST /api/auth/register` — Create user account & return JWT.
-* `POST /api/auth/login` — Sign in & return JWT.
-* `GET /api/auth/me` — Get profile for authenticated user.
-
-### Resume Intelligence
-* `POST /api/resume/analyze` — Upload PDF resume & optional target job description. Evaluates ATS, skills, gaps, CRI, and auto-indexes into the user's Career Knowledge Base when authenticated.
-
-### Career Knowledge Base & RAG
-* `POST /api/rag/chat` — Ask the grounded Career Intelligence Assistant with semantic vector retrieval & source citations.
-* `POST /api/rag/documents` — Ingest career documents, goals, certifications, notes, or job descriptions.
-* `GET /api/rag/documents` — List user's indexed career documents and chunk counts.
-* `DELETE /api/rag/documents/{id}` — Delete a career document and cascade delete its vector chunks.
+*Note: The structure above is representative. Refer to the actual repository for the complete list of files and modules.*
 
 ---
 
-## ⚙️ Local Installation & Run
+## ⚙️ Getting Started
 
-### 1. Backend
+Follow these steps to run the project locally.
+
+### Prerequisites
+
+Install the following:
+
+* Python
+* Node.js and npm
+* Git
+* A Google Gemini API key
+* PostgreSQL with pgvector for the PostgreSQL-backed configuration
+
+### 1. Clone the Repository
 
 ```bash
+git clone https://github.com/Bhavishya-22/nexthire-ai.git
+cd nexthire-ai
+```
+
+### 2. Set Up the Backend
+
+Open a terminal in the project directory.
+
+```powershell
 cd backend
 python -m venv venv
-venv\Scripts\activate       # On Windows
-# source venv/bin/activate  # On macOS/Linux
-
+.\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+```
+
+Create or update the backend `.env` file using the variables supported by your current implementation:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=your_supported_gemini_model
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+EMBEDDING_DIMENSION=768
+DATABASE_URL=your_database_connection_url
+ALLOWED_ORIGINS=http://localhost:5173
+JWT_SECRET_KEY=your_secure_random_secret
+```
+
+Replace the example values with your actual configuration. Use the exact model name and database URL supported by your project.
+
+Start the backend:
+
+```powershell
 uvicorn app.main:app --reload
 ```
 
-### 2. Frontend
+The backend should be available at:
 
-```bash
+`http://127.0.0.1:8000`
+
+FastAPI's interactive API documentation is available at:
+
+`http://127.0.0.1:8000/docs`
+
+### 3. Set Up the Frontend
+
+Open a second terminal from the project root.
+
+```powershell
 cd frontend
 npm install
+```
+
+Create the frontend `.env` file:
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+Start the development server:
+
+```powershell
 npm run dev
 ```
 
----
+Open the local URL displayed by Vite, typically:
 
-## ☁️ Production Deployment Guide
+`http://localhost:5173`
 
-| Component | Platform | Configuration File |
-| :--- | :--- | :--- |
-| **Frontend** | Vercel | [`frontend/vercel.json`](./frontend/vercel.json) |
-| **Backend** | Render | [`render.yaml`](./render.yaml), [`backend/Procfile`](./backend/Procfile) |
-| **Database + pgvector** | Supabase | [`database/schema.sql`](./database/schema.sql) |
+### 4. Configure the Database
 
-1. **Supabase**: Open the SQL editor in Supabase and run `database/schema.sql`. Copy your connection URI into Render's `DATABASE_URL`.
-2. **Render**: Connect the repo to Render. Set environment variables (`GEMINI_API_KEY`, `DATABASE_URL`, `JWT_SECRET_KEY`).
-3. **Vercel**: Deploy the `frontend/` directory with `VITE_API_BASE_URL` pointing to your Render backend URL.
+Configure `DATABASE_URL` to point to your selected database.
+
+For PostgreSQL-backed deployments, ensure PostgreSQL and the pgvector extension are available and that the required tables and schema are initialized according to the existing backend implementation.
+
+Do not commit database credentials, API keys, or JWT secrets to GitHub.
 
 ---
 
-## 👨‍💻 Author
+## 🔌 API Endpoints
 
-**P. Bhavishya Laxmi Sarvani**  
-B.Tech CSE - Artificial Intelligence and Machine Learning
+The backend README documents the following API endpoints.
+
+| Method | Endpoint                  | Purpose                                       |
+| ------ | ------------------------- | --------------------------------------------- |
+| POST   | `/api/auth/register`      | Register a user                               |
+| POST   | `/api/auth/login`         | Authenticate a user                           |
+| GET    | `/api/auth/me`            | Retrieve the authenticated user's information |
+| POST   | `/api/resume/analyze`     | Analyze resume content                        |
+| POST   | `/api/rag/documents`      | Add a document to the RAG knowledge base      |
+| GET    | `/api/rag/documents`      | List knowledge-base documents                 |
+| DELETE | `/api/rag/documents/{id}` | Delete a knowledge-base document              |
+| POST   | `/api/rag/chat`           | Ask questions using RAG                       |
+
+Actual request fields, response schemas, and authentication requirements should be verified against the backend API documentation.
+
+---
+
+## 🔒 Security and Data Privacy
+
+Security is an important part of a personalized career intelligence system.
+
+The project includes or is designed to use:
+
+* Password hashing rather than plaintext password storage.
+* JWT-based authentication.
+* Protected backend endpoints.
+* User-specific career documents and retrieval.
+* Environment variables for sensitive configuration.
+* User-level access checks for career knowledge-base operations.
+
+All document retrieval, deletion, and AI-assisted responses should enforce ownership checks so that one user cannot access another user's private career information.
+
+---
+
+## 🚀 Deployment
+
+The project is designed around the following deployment options:
+
+* **Frontend:** Vercel
+* **Backend:** Render
+* **Database and Vector Storage:** Supabase PostgreSQL with pgvector
+
+Before deployment:
+
+1. Configure the production database and required schema.
+2. Add backend environment variables in the hosting provider.
+3. Set the frontend API base URL to the deployed backend.
+4. Configure allowed CORS origins.
+5. Use a strong, unique JWT secret.
+6. Verify authentication, PDF upload, resume analysis, CRI calculation, and RAG retrieval in the deployed environment.
+7. Confirm user isolation and document ownership checks.
+
+Deployment configuration files may be present in the repository, but successful deployment depends on the actual hosting configuration and environment variables.
+
+---
+
+## 🔮 Future Enhancements
+
+Potential improvements to the platform include:
+
+* Personalized learning roadmaps based on skill gaps.
+* More detailed career-readiness analytics.
+* Enhanced job recommendation workflows.
+* Career progress tracking over time.
+* Interview preparation using resume-specific context.
+* Expanded AI career assistance and agent-based workflows.
+* Improved evaluation of resume quality and job alignment.
+
+These are future possibilities and should not be interpreted as completed features unless implemented in the repository.
+
+---
+
+## 🎯 Project Goal
+
+The goal of NextHire AI is to move beyond traditional resume screening by helping users understand their career readiness, discover actionable skill gaps, and make better-informed career development decisions through AI-powered insights.
+
+Rather than simply evaluating a resume, the platform aims to connect a candidate's existing experience with the requirements of their target role.
+
+---
+
+## 👩‍💻 Author
+
+**P. Bhavishya Laxmi Sarvani**
+
+* GitHub: [Bhavishya-22](https://github.com/Bhavishya-22)
+* Portfolio: [bhavishya-22.github.io/bhavishya-portfolio](https://bhavishya-22.github.io/bhavishya-portfolio/)
+
+---
+
+⭐ If you find this project interesting, consider starring the repository!
+
+**NextHire AI — Understand your readiness. Identify your gaps. Build your future.**
