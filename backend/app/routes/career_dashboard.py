@@ -4,11 +4,28 @@ from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.database import get_db
 from app.models import User
 from app.auth import get_authenticated_user
-from app.services.gemini import generate_json, analyze_job_match
+from app.services.gemini import generate_json
+from app.services.interview_prep import (
+    InterviewQuestion,
+    InterviewFeedbackRequest,
+    InterviewFeedbackData,
+    generate_role_questions_with_gemini,
+    evaluate_interview_answer_ai,
+    get_cached_questions,
+    save_cached_questions,
+    _normalize_role,
+)
+from app.services.learning_hub import (
+    get_personalized_learning_plan,
+    toggle_resource_bookmark,
+    toggle_resource_complete,
+    get_learning_metrics,
+)
 
 router = APIRouter(prefix="/api/dashboard", tags=["Career Dashboard Interactive Modules"])
 
@@ -322,212 +339,94 @@ def toggle_roadmap_task(
 
 
 # =========================================================================
-# 3. JOB OPPORTUNITIES MODULE (TRACKING & MATCHING)
+# 3. INTERVIEW PREPARATION MODULE (ROLE-AWARE QUESTIONS & EVALUATION)
 # =========================================================================
 
-class JobPayload(BaseModel):
-    title: str = Field(..., min_length=2)
-    company: str = Field(..., min_length=2)
-    location: str = Field(default="Remote")
-    job_type: str = Field(default="Full-time")
-    experience_req: str = Field(default="0-2 Years")
-    required_skills: List[str] = Field(default_factory=list)
-    job_description: Optional[str] = ""
-    job_url: Optional[str] = ""
-    status: str = Field(default="Saved")  # "Saved", "Applied", "Interview", "Rejected", "Offer"
-    notes: Optional[str] = ""
+class QuestionQueryPayload(BaseModel):
+    category: Optional[str] = "Technical"
+    target_role: Optional[str] = None
+    refresh: bool = False
 
 
-def _get_or_init_jobs(user: User) -> List[Dict[str, Any]]:
-    profile_data = dict(user.profile_data or {})
-    if "saved_jobs" in profile_data and isinstance(profile_data["saved_jobs"], list):
-        return profile_data["saved_jobs"]
-
-    role = user.target_role or "AI Engineer"
-    skills = profile_data.get("resume_analysis", {}).get("skills", ["Python", "FastAPI"])
-
-    initial_jobs = [
-        {
-            "id": f"job-{uuid.uuid4().hex[:8]}",
-            "title": f"Junior {role}",
-            "company": "Cognizant AI Labs",
-            "location": "Bengaluru / Hybrid",
-            "job_type": "Full-time",
-            "experience_req": "Fresher - 2 Years",
-            "required_skills": ["Python", "TensorFlow", "FastAPI", "Docker"],
-            "match_score": 86,
-            "matching_skills": [s for s in skills if s.lower() in ["python", "machine learning", "tensorflow"]],
-            "missing_skills": ["Docker", "Kubernetes"],
-            "job_url": "https://www.linkedin.com/jobs",
-            "status": "Saved",
-            "notes": "Matches primary tech stack. Focus on deployment for technical round.",
-            "created_at": datetime.utcnow().isoformat()
-        },
-        {
-            "id": f"job-{uuid.uuid4().hex[:8]}",
-            "title": f"{role} Intern",
-            "company": "Infosys InStep",
-            "location": "Hyderabad / Remote",
-            "job_type": "Internship",
-            "experience_req": "Student / Fresher",
-            "required_skills": ["Python", "SQL", "Git", "Problem Solving"],
-            "match_score": 92,
-            "matching_skills": ["Python", "SQL", "Git"],
-            "missing_skills": ["Cloud Basics"],
-            "job_url": "https://careers.infosys.com",
-            "status": "Applied",
-            "notes": "Applied via referral on campus portal. First round screening awaited.",
-            "created_at": datetime.utcnow().isoformat()
-        },
-        {
-            "id": f"job-{uuid.uuid4().hex[:8]}",
-            "title": "Machine Learning Engineer",
-            "company": "TCS Research",
-            "location": "Pune",
-            "job_type": "Full-time",
-            "experience_req": "1-3 Years",
-            "required_skills": ["Python", "PyTorch", "NLP", "MLOps"],
-            "match_score": 74,
-            "matching_skills": ["Python", "Machine Learning"],
-            "missing_skills": ["PyTorch", "MLOps"],
-            "job_url": "https://www.tcs.com/careers",
-            "status": "Interview",
-            "notes": "Interview scheduled next Tuesday. Prepare NLP transformer architectures.",
-            "created_at": datetime.utcnow().isoformat()
-        }
-    ]
-
-    profile_data["saved_jobs"] = initial_jobs
-    user.profile_data = profile_data
-    return initial_jobs
-
-
-@router.get("/jobs")
-def get_user_jobs(
+@router.get("/interview/questions")
+def get_interview_questions(
+    category: Optional[str] = "Technical",
+    target_role: Optional[str] = None,
+    refresh: bool = False,
     current_user: User = Depends(get_authenticated_user),
     db: Session = Depends(get_db)
 ):
-    jobs = _get_or_init_jobs(current_user)
+    """
+    Returns role-specific and category-specific interview questions.
+    Checks role-aware cache first unless refresh=True is requested.
+    Extracts real projects, skills, and experience from user's profile.
+    """
+    role = _normalize_role(target_role or current_user.target_role)
+    cat = category if category in ["Technical", "Project", "HR", "Mock"] else "Technical"
+
+    # Check cache if not forcing refresh
+    if not refresh:
+        cached = get_cached_questions(current_user, role, cat)
+        if cached:
+            return {
+                "success": True,
+                "target_role": role,
+                "category": cat,
+                "questions": [q.model_dump() for q in cached],
+                "total": len(cached),
+                "is_cached": True
+            }
+
+    # Gather user context
+    user_projects = _get_or_init_projects(current_user)
+    profile_data = current_user.profile_data or {}
+    skills = profile_data.get("resume_analysis", {}).get("skills", [])
+    prefs = profile_data.get("preferences", {})
+    exp_level = prefs.get("experience_level", "Mid-Level")
+    job_desc = profile_data.get("job_description")
+    
+    # Gather previously answered questions to avoid duplicates
+    history = profile_data.get("interview_history", [])
+    prev_questions = [h.get("question") for h in history if h.get("target_role", "").lower() == role.lower() and h.get("category") == cat]
+
+    questions = generate_role_questions_with_gemini(
+        role=role,
+        category=cat,
+        projects=user_projects,
+        skills=skills,
+        experience_level=exp_level,
+        job_description=job_desc,
+        previously_answered=prev_questions
+    )
+
+    # Save to user's role-specific cache
+    save_cached_questions(current_user, role, cat, questions)
     db.add(current_user)
     db.commit()
-    return {"success": True, "jobs": jobs}
 
-
-@router.post("/jobs")
-def add_user_job(
-    payload: JobPayload,
-    current_user: User = Depends(get_authenticated_user),
-    db: Session = Depends(get_db)
-):
-    jobs = _get_or_init_jobs(current_user)
-    profile_data = dict(current_user.profile_data or {})
-    user_skills = profile_data.get("resume_analysis", {}).get("skills", [])
-    
-    # Calculate match score based on skills overlap
-    req_skills = [s.strip() for s in payload.required_skills if s.strip()]
-    if req_skills:
-        matched = [s for s in req_skills if any(u.lower() in s.lower() or s.lower() in u.lower() for u in user_skills)]
-        missing = [s for s in req_skills if s not in matched]
-        score = round((len(matched) / len(req_skills)) * 100)
-    else:
-        matched = user_skills[:4]
-        missing = []
-        score = 80
-
-    new_job = {
-        "id": f"job-{uuid.uuid4().hex[:8]}",
-        "title": payload.title.strip(),
-        "company": payload.company.strip(),
-        "location": payload.location.strip() or "Remote",
-        "job_type": payload.job_type,
-        "experience_req": payload.experience_req,
-        "required_skills": req_skills,
-        "match_score": score,
-        "matching_skills": matched,
-        "missing_skills": missing,
-        "job_url": (payload.job_url or "").strip(),
-        "status": payload.status,
-        "notes": (payload.notes or "").strip(),
-        "created_at": datetime.utcnow().isoformat()
+    return {
+        "success": True,
+        "target_role": role,
+        "category": cat,
+        "questions": [q.model_dump() for q in questions],
+        "total": len(questions),
+        "is_cached": False
     }
 
-    jobs.insert(0, new_job)
-    profile_data["saved_jobs"] = jobs
-    current_user.profile_data = profile_data
-    db.add(current_user)
-    db.commit()
 
-    return {"success": True, "message": "Job opportunity tracked successfully", "job": new_job, "jobs": jobs}
-
-
-class JobStatusUpdatePayload(BaseModel):
-    status: str
-    notes: Optional[str] = None
-
-
-@router.put("/jobs/{job_id}/status")
-def update_job_status(
-    job_id: str,
-    payload: JobStatusUpdatePayload,
+@router.post("/interview/questions")
+def post_interview_questions(
+    payload: QuestionQueryPayload,
     current_user: User = Depends(get_authenticated_user),
     db: Session = Depends(get_db)
 ):
-    jobs = _get_or_init_jobs(current_user)
-    found = False
-    updated_job = None
-
-    for j in jobs:
-        if j["id"] == job_id:
-            j["status"] = payload.status
-            if payload.notes is not None:
-                j["notes"] = payload.notes
-            updated_job = j
-            found = True
-            break
-
-    if not found:
-        raise HTTPException(status_code=404, detail="Job not found")
-
-    profile_data = dict(current_user.profile_data or {})
-    profile_data["saved_jobs"] = jobs
-    current_user.profile_data = profile_data
-    db.add(current_user)
-    db.commit()
-
-    return {"success": True, "message": f"Status updated to {payload.status}", "job": updated_job, "jobs": jobs}
-
-
-@router.delete("/jobs/{job_id}")
-def delete_user_job(
-    job_id: str,
-    current_user: User = Depends(get_authenticated_user),
-    db: Session = Depends(get_db)
-):
-    jobs = _get_or_init_jobs(current_user)
-    orig_len = len(jobs)
-    jobs = [j for j in jobs if j["id"] != job_id]
-
-    if len(jobs) == orig_len:
-        raise HTTPException(status_code=404, detail="Job not found")
-
-    profile_data = dict(current_user.profile_data or {})
-    profile_data["saved_jobs"] = jobs
-    current_user.profile_data = profile_data
-    db.add(current_user)
-    db.commit()
-
-    return {"success": True, "message": "Job removed from tracking", "jobs": jobs}
-
-
-# =========================================================================
-# 4. INTERVIEW PREPARATION MODULE (GEMINI / RAG FEEDBACK EVALUATION)
-# =========================================================================
-
-class InterviewFeedbackRequest(BaseModel):
-    question: str = Field(..., min_length=5)
-    answer: str = Field(..., min_length=5)
-    category: str = Field(default="Technical")  # "Technical", "Project", "HR", "Mock"
-    target_role: Optional[str] = ""
+    return get_interview_questions(
+        category=payload.category,
+        target_role=payload.target_role,
+        refresh=payload.refresh,
+        current_user=current_user,
+        db=db
+    )
 
 
 @router.post("/interview/feedback")
@@ -537,62 +436,46 @@ def evaluate_interview_answer(
     db: Session = Depends(get_db)
 ):
     """
-    Evaluates candidate interview answer using AI guidance.
-    Provides structured feedback on technical correctness, completeness, relevance,
-    missing concepts, clarity, and suggested improvements.
-    Saves attempt to user interview history.
+    Evaluates candidate interview answer using role-specific AI criteria and rubrics.
+    Provides structured feedback on technical/domain correctness, completeness, relevance,
+    clarity, practical depth, missing concepts, strengths, model answer outline, and rubric breakdown.
+    Persists attempt to user's isolated interview history.
     """
-    role = request.target_role or current_user.target_role or "AI Engineer"
-    
-    prompt = f"""
-You are an expert technical interviewer evaluating a candidate for the role of {role}.
-Interview Question ({request.category}):
-{request.question}
+    role = _normalize_role(request.target_role or current_user.target_role)
+    cat = request.category if request.category in ["Technical", "Project", "HR", "Mock"] else "Technical"
 
-Candidate Answer:
-{request.answer}
+    feedback_data = evaluate_interview_answer_ai(
+        role=role,
+        category=cat,
+        question=request.question,
+        answer=request.answer,
+        expected_concepts=request.expected_concepts,
+        evaluation_criteria=request.evaluation_criteria
+    )
 
-Evaluate this answer and return ONLY valid JSON in this exact structure:
-{{
-    "technical_correctness": 85,
-    "answer_completeness": 80,
-    "relevance": 90,
-    "communication_clarity": 85,
-    "overall_score": 85,
-    "strengths": ["Clear explanation of core architecture", "Good structured delivery"],
-    "missing_concepts": ["Did not mention error handling under high load", "Could detail metric benchmarks"],
-    "suggested_improvements": "Quantify your performance improvements and discuss failure mode recovery.",
-    "summary": "Solid and competent answer demonstrating practical understanding. Expanding on edge cases will make this top tier."
-}}
-Score integers must be between 0 and 100.
-"""
-    try:
-        feedback = generate_json(prompt)
-    except Exception as e:
-        # Graceful heuristic fallback if AI quota or transient issue occurs
-        ans_len = len(request.answer.split())
-        score = min(90, max(50, 50 + (ans_len // 4)))
-        feedback = {
-            "technical_correctness": score,
-            "answer_completeness": max(45, score - 5),
-            "relevance": min(95, score + 5),
-            "communication_clarity": 80,
-            "overall_score": score,
-            "strengths": ["Directly addresses the question prompt", "Demonstrates foundational familiarity"],
-            "missing_concepts": ["Consider citing specific measurable outcomes or performance metrics"],
-            "suggested_improvements": "Use the STAR method (Situation, Task, Action, Result) to give concrete evidence.",
-            "summary": "Good clear answer. Label this as AI guidance to further refine your delivery."
-        }
+    feedback_dict = feedback_data.model_dump()
 
     # Record interview attempt in user profile
     profile_data = dict(current_user.profile_data or {})
-    history = profile_data.get("interview_history", [])
+    history = list(profile_data.get("interview_history", []))
     history.append({
         "id": f"int-{uuid.uuid4().hex[:8]}",
+        "question_id": request.question_id or f"q-{uuid.uuid4().hex[:6]}",
         "question": request.question,
         "answer": request.answer,
-        "category": request.category,
-        "overall_score": feedback.get("overall_score", 80),
+        "category": cat,
+        "target_role": role,
+        "overall_score": feedback_dict.get("overall_score", 80),
+        "technical_correctness": feedback_dict.get("technical_correctness", 80),
+        "answer_completeness": feedback_dict.get("answer_completeness", 80),
+        "relevance": feedback_dict.get("relevance", 80),
+        "communication_clarity": feedback_dict.get("communication_clarity", 80),
+        "practical_depth": feedback_dict.get("practical_depth", 80),
+        "strengths": feedback_dict.get("strengths", []),
+        "missing_concepts": feedback_dict.get("missing_concepts", []),
+        "suggested_improvements": feedback_dict.get("suggested_improvements", ""),
+        "model_answer_outline": feedback_dict.get("model_answer_outline", ""),
+        "summary": feedback_dict.get("summary", ""),
         "created_at": datetime.utcnow().isoformat()
     })
     profile_data["interview_history"] = history
@@ -602,9 +485,106 @@ Score integers must be between 0 and 100.
 
     return {
         "success": True,
-        "feedback": feedback,
+        "feedback": feedback_dict,
         "history_count": len(history)
     }
+
+
+@router.get("/interview/history")
+def get_interview_history(
+    target_role: Optional[str] = None,
+    current_user: User = Depends(get_authenticated_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns authenticated user's interview history, optionally filtered by target_role.
+    """
+    profile_data = current_user.profile_data or {}
+    history = profile_data.get("interview_history", [])
+    if target_role:
+        history = [h for h in history if h.get("target_role", "").lower() == target_role.strip().lower()]
+    return {
+        "success": True,
+        "history": history,
+        "total": len(history)
+    }
+
+
+# =========================================================================
+# 4. LEARNING HUB MODULE (PERSONALIZED RECOMMENDATIONS & PROGRESS PERSISTENCE)
+# =========================================================================
+
+class LearningBookmarkPayload(BaseModel):
+    resource_id: str
+
+
+class LearningCompletePayload(BaseModel):
+    resource_id: str
+    hours: Optional[float] = 3.0
+
+
+@router.get("/learning/recommendations")
+def get_learning_recommendations(
+    category: Optional[str] = None,
+    target_role: Optional[str] = None,
+    current_user: User = Depends(get_authenticated_user),
+    db: Session = Depends(get_db)
+):
+    profile_data = dict(current_user.profile_data or {})
+    role = target_role or current_user.target_role or "AI Engineer"
+    recommendations = get_personalized_learning_plan(
+        user_profile=profile_data,
+        target_role=role,
+        filter_category=category
+    )
+    metrics = get_learning_metrics(profile_data)
+    return {
+        "success": True,
+        "target_role": role,
+        "recommendations": recommendations,
+        "metrics": metrics,
+        "total": len(recommendations)
+    }
+
+
+@router.post("/learning/toggle-bookmark")
+def handle_toggle_bookmark(
+    payload: LearningBookmarkPayload,
+    current_user: User = Depends(get_authenticated_user),
+    db: Session = Depends(get_db)
+):
+    profile_data = dict(current_user.profile_data or {})
+    res = toggle_resource_bookmark(profile_data, payload.resource_id)
+    current_user.profile_data = profile_data
+    flag_modified(current_user, "profile_data")
+    db.add(current_user)
+    db.commit()
+    return {"success": True, "data": res}
+
+
+@router.post("/learning/toggle-complete")
+def handle_toggle_complete(
+    payload: LearningCompletePayload,
+    current_user: User = Depends(get_authenticated_user),
+    db: Session = Depends(get_db)
+):
+    profile_data = dict(current_user.profile_data or {})
+    res = toggle_resource_complete(profile_data, payload.resource_id, payload.hours or 3.0)
+    current_user.profile_data = profile_data
+    flag_modified(current_user, "profile_data")
+    db.add(current_user)
+    db.commit()
+    return {"success": True, "data": res}
+
+
+@router.get("/learning/progress")
+def get_learning_progress(
+    current_user: User = Depends(get_authenticated_user),
+    db: Session = Depends(get_db)
+):
+    profile_data = dict(current_user.profile_data or {})
+    metrics = get_learning_metrics(profile_data)
+    return {"success": True, "metrics": metrics}
 
 
 # =========================================================================
@@ -624,10 +604,15 @@ def get_user_progress(
     completed_tasks = roadmap.get("completed_tasks", 0)
     roadmap_pct = roadmap.get("progress_percentage", 0)
 
-    # 2. Learning hours logged (estimated from completed tasks + user preferences)
+    # 2. Genuine Learning Hub progress & hours
+    learning_metrics = get_learning_metrics(profile_data)
+    learning_completed_count = learning_metrics["total_completed"]
+    learning_hours_genuine = learning_metrics["total_hours"]
+
+    # Base hours from user preferences plus genuine completed activities
     prefs = profile_data.get("preferences", {})
     base_hours = prefs.get("learning_hours_per_week", 10)
-    hours_logged = (completed_tasks * 2.5) + (base_hours * 0.5)
+    hours_logged = (completed_tasks * 2.5) + learning_hours_genuine + (base_hours * 0.2)
 
     # 3. Mock interviews completed
     interview_history = profile_data.get("interview_history", [])
@@ -637,10 +622,9 @@ def get_user_progress(
     skills = profile_data.get("resume_analysis", {}).get("skills", [])
     skills_count = len(skills)
 
-    # 5. Jobs tracked
-    jobs = _get_or_init_jobs(current_user)
-    jobs_saved = sum(1 for j in jobs if j.get("status") == "Saved")
-    applications_submitted = sum(1 for j in jobs if j.get("status") in ["Applied", "Interview", "Offer"])
+    # 5. Portfolio projects
+    user_projects = _get_or_init_projects(current_user)
+    projects_count = len(user_projects)
 
     # 6. Recent activity timeline
     activities = [
@@ -648,10 +632,12 @@ def get_user_progress(
     ]
     if completed_tasks > 0:
         activities.append({"title": f"Completed {completed_tasks} learning roadmap tasks", "timestamp": "This week", "type": "roadmap"})
+    if learning_completed_count > 0:
+        activities.append({"title": f"Completed {learning_completed_count} verified Learning Hub modules ({learning_hours_genuine} hrs logged)", "timestamp": "Recent", "type": "learning"})
     if mock_count > 0:
         activities.append({"title": f"Practiced {mock_count} interview questions with AI evaluation", "timestamp": "Recent", "type": "interview"})
-    if applications_submitted > 0:
-        activities.append({"title": f"Submitted {applications_submitted} job applications", "timestamp": "Recent", "type": "job"})
+    if projects_count > 0:
+        activities.append({"title": f"Built & tracked {projects_count} portfolio engineering projects", "timestamp": "Recent", "type": "project"})
 
     db.add(current_user)
     db.commit()
@@ -663,15 +649,15 @@ def get_user_progress(
             "tasks_completed": completed_tasks,
             "total_tasks": total_tasks,
             "learning_hours_logged": round(hours_logged, 1),
+            "learning_modules_completed": learning_completed_count,
             "mock_interviews_completed": mock_count,
             "skills_assessed": skills_count,
-            "jobs_saved": jobs_saved,
-            "applications_submitted": applications_submitted,
+            "projects_count": projects_count,
             "recent_activity": activities,
             "weekly_goals": [
                 {"goal": f"Complete Week {min(4, (completed_tasks // 3) + 1)} roadmap milestone", "completed": completed_tasks >= 3},
                 {"goal": "Practice 2 technical mock questions", "completed": mock_count >= 2},
-                {"goal": "Apply to 3 matching job openings", "completed": applications_submitted >= 3},
+                {"goal": "Build and document 1 portfolio project", "completed": projects_count >= 1},
             ]
         }
     }

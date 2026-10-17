@@ -452,77 +452,172 @@ export const toggleRoadmapTask = async (
   return response.data;
 };
 
-// --- Job Opportunities API Methods ---
-export interface JobOpportunityItem {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  job_type: string;
-  experience_req: string;
-  required_skills: string[];
-  match_score: number;
-  matching_skills: string[];
-  missing_skills: string[];
-  job_url?: string;
-  status: string;
-  notes?: string;
-  created_at?: string;
+// --- Interview Prep API Methods ---
+export interface InterviewQuestion {
+  question_id: string;
+  question: string;
+  category: "Technical" | "Project" | "HR" | "Mock";
+  target_role: string;
+  difficulty: "Foundational" | "Intermediate" | "Advanced";
+  relevant_skills: string[];
+  evaluation_criteria: string;
+  expected_concepts: string[];
 }
 
-export const getDashboardJobs = async (): Promise<{ success: boolean; jobs: JobOpportunityItem[] }> => {
-  const response = await api.get("/api/dashboard/jobs");
-  return response.data;
-};
+export interface InterviewQuestionsResponse {
+  success: boolean;
+  target_role: string;
+  category?: string;
+  questions: InterviewQuestion[];
+  total: number;
+  is_cached?: boolean;
+}
 
-export const addDashboardJob = async (
-  payload: Partial<JobOpportunityItem>
-): Promise<{ success: boolean; job: JobOpportunityItem; jobs: JobOpportunityItem[] }> => {
-  const response = await api.post("/api/dashboard/jobs", payload);
-  return response.data;
-};
-
-export const updateDashboardJobStatus = async (
-  id: string,
-  status: string,
-  notes?: string
-): Promise<{ success: boolean; job: JobOpportunityItem; jobs: JobOpportunityItem[] }> => {
-  const response = await api.put(`/api/dashboard/jobs/${id}/status`, { status, notes });
-  return response.data;
-};
-
-export const deleteDashboardJob = async (
-  id: string
-): Promise<{ success: boolean; jobs: JobOpportunityItem[] }> => {
-  const response = await api.delete(`/api/dashboard/jobs/${id}`);
-  return response.data;
-};
-
-// --- Interview Prep API Methods ---
 export interface InterviewFeedbackData {
   technical_correctness: number;
   answer_completeness: number;
   relevance: number;
   communication_clarity: number;
+  practical_depth?: number;
   overall_score: number;
+  rubric_breakdown?: {
+    domain_competence?: string;
+    methodology_and_depth?: string;
+    communication_and_structure?: string;
+    [key: string]: any;
+  };
   strengths: string[];
+  concepts_covered?: string[];
   missing_concepts: string[];
   suggested_improvements: string;
+  model_answer_outline?: string;
   summary: string;
 }
+
+export const getInterviewQuestions = async (
+  category?: string,
+  targetRole?: string,
+  refresh: boolean = false
+): Promise<InterviewQuestionsResponse> => {
+  const params: Record<string, any> = {};
+  if (category) params.category = category;
+  if (targetRole) params.target_role = targetRole;
+  if (refresh) params.refresh = true;
+
+  const response = await api.get<InterviewQuestionsResponse>(
+    "/api/dashboard/interview/questions",
+    { params }
+  );
+  return response.data;
+};
 
 export const evaluateInterviewAnswer = async (
   question: string,
   answer: string,
   category: string,
-  targetRole?: string
+  targetRole?: string,
+  questionId?: string,
+  expectedConcepts?: string[],
+  evaluationCriteria?: string
 ): Promise<{ success: boolean; feedback: InterviewFeedbackData }> => {
   const response = await api.post("/api/dashboard/interview/feedback", {
+    question_id: questionId,
     question,
     answer,
     category,
     target_role: targetRole,
+    expected_concepts: expectedConcepts || [],
+    evaluation_criteria: evaluationCriteria || "",
   });
+  return response.data;
+};
+
+export const getInterviewHistory = async (
+  targetRole?: string
+): Promise<{ success: boolean; history: any[]; total: number }> => {
+  const params = targetRole ? { target_role: targetRole } : {};
+  const response = await api.get("/api/dashboard/interview/history", { params });
+  return response.data;
+};
+
+// --- Learning Hub API Methods ---
+export interface LearningResourceItem {
+  id: string;
+  title: string;
+  skill: string;
+  provider: string;
+  url: string;
+  resource_type: string;
+  difficulty: string;
+  duration: string;
+  is_free: boolean;
+  category: string;
+  why_matters: string;
+  expected_outcome: string;
+  gap_source: string;
+  practical_exercise: string;
+  is_bookmarked: boolean;
+  is_completed: boolean;
+  completed_at?: string | null;
+  learning_order: number;
+}
+
+export interface LearningProgressMetrics {
+  total_completed: number;
+  total_hours: number;
+  total_bookmarked: number;
+  completed_ids: string[];
+  bookmarked_ids: string[];
+}
+
+export interface LearningRecommendationsResponse {
+  success: boolean;
+  target_role: string;
+  recommendations: LearningResourceItem[];
+  metrics: LearningProgressMetrics;
+  total: number;
+}
+
+export const getLearningRecommendations = async (
+  category?: string,
+  targetRole?: string
+): Promise<LearningRecommendationsResponse> => {
+  const params: Record<string, any> = {};
+  if (category) params.category = category;
+  if (targetRole) params.target_role = targetRole;
+
+  const response = await api.get<LearningRecommendationsResponse>(
+    "/api/dashboard/learning/recommendations",
+    { params }
+  );
+  return response.data;
+};
+
+export const toggleLearningBookmark = async (
+  resourceId: string
+): Promise<{ success: boolean; data: any }> => {
+  const response = await api.post("/api/dashboard/learning/toggle-bookmark", {
+    resource_id: resourceId,
+  });
+  return response.data;
+};
+
+export const toggleLearningComplete = async (
+  resourceId: string,
+  hours: number = 3.0
+): Promise<{ success: boolean; data: any }> => {
+  const response = await api.post("/api/dashboard/learning/toggle-complete", {
+    resource_id: resourceId,
+    hours,
+  });
+  return response.data;
+};
+
+export const getLearningProgress = async (): Promise<{
+  success: boolean;
+  metrics: LearningProgressMetrics;
+}> => {
+  const response = await api.get("/api/dashboard/learning/progress");
   return response.data;
 };
 
@@ -532,10 +627,10 @@ export interface ProgressData {
   tasks_completed: number;
   total_tasks: number;
   learning_hours_logged: number;
+  learning_modules_completed?: number;
   mock_interviews_completed: number;
   skills_assessed: number;
-  jobs_saved: number;
-  applications_submitted: number;
+  projects_count?: number;
   recent_activity: { title: string; timestamp: string; type: string }[];
   weekly_goals: { goal: string; completed: boolean }[];
 }

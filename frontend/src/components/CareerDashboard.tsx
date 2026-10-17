@@ -7,7 +7,6 @@ import {
   GitBranch,
   Layers,
   Mic,
-  Briefcase,
   GraduationCap,
   TrendingUp,
   FileText,
@@ -35,7 +34,6 @@ import SkillsGapsView from "./dashboard/SkillsGapsView";
 import RoadmapView from "./dashboard/RoadmapView";
 import ProjectsView from "./dashboard/ProjectsView";
 import InterviewPrepView from "./dashboard/InterviewPrepView";
-import JobOpportunitiesView from "./dashboard/JobOpportunitiesView";
 import LearningHubView from "./dashboard/LearningHubView";
 import ProgressTrackerView from "./dashboard/ProgressTrackerView";
 import ReportsView from "./dashboard/ReportsView";
@@ -169,7 +167,7 @@ export default function CareerDashboard({
   const circumference = Math.PI * radius; // ~251.3
   const strokeDashoffset = circumference - (Math.min(100, Math.max(0, criScore)) / 100) * circumference;
 
-  // 11 Sidebar navigation sections
+  // 10 Sidebar navigation sections
   const navItems = [
     { name: "Career Profile", icon: User },
     { name: "Career Data Hub", icon: Folder },
@@ -178,7 +176,6 @@ export default function CareerDashboard({
     { name: "Roadmap", icon: GitBranch },
     { name: "Projects", icon: Layers },
     { name: "Interview Prep", icon: Mic },
-    { name: "Job Opportunities", icon: Briefcase },
     { name: "Learning Hub", icon: GraduationCap },
     { name: "Progress Tracker", icon: TrendingUp },
     { name: "Reports", icon: FileText },
@@ -481,25 +478,6 @@ export default function CareerDashboard({
               }}
             >
               <Upload size={14} /> Analyze Resume
-            </button>
-
-            <button
-              onClick={() => setActiveNav("Job Opportunities")}
-              style={{
-                background: "#ffffff",
-                border: "1px solid #cbd5e1",
-                color: "#334155",
-                padding: "8px 14px",
-                borderRadius: "9px",
-                fontSize: "12.5px",
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "5px",
-              }}
-            >
-              <Briefcase size={14} /> Find Matching Jobs
             </button>
 
             <button
@@ -1072,13 +1050,7 @@ export default function CareerDashboard({
           <InterviewPrepView
             currentUser={currentUserState}
             analysisData={analysisDataState}
-          />
-        )}
-
-        {activeNav === "Job Opportunities" && (
-          <JobOpportunitiesView
-            currentUser={currentUserState}
-            onJobsUpdated={() => {}}
+            onOpenEditProfile={() => setIsEditProfileOpen(true)}
           />
         )}
 
@@ -1086,6 +1058,9 @@ export default function CareerDashboard({
           <LearningHubView
             currentUser={currentUserState}
             analysisData={analysisDataState}
+            onNavigateToInterview={(_role) => {
+              setActiveNav("Interview Prep");
+            }}
           />
         )}
 

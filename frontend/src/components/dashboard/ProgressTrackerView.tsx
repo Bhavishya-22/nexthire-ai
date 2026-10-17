@@ -4,12 +4,12 @@ import {
   CheckCircle2,
   Clock,
   Mic,
-  Briefcase,
   Layers,
   Award,
   Calendar,
   Loader2,
   Target,
+  GraduationCap,
 } from "lucide-react";
 import {
   getDashboardProgress,
@@ -52,10 +52,10 @@ export default function ProgressTrackerView({ currentUser }: ProgressTrackerView
     tasks_completed: 2,
     total_tasks: 12,
     learning_hours_logged: 10,
+    learning_modules_completed: 1,
     mock_interviews_completed: 1,
     skills_assessed: 8,
-    jobs_saved: 2,
-    applications_submitted: 1,
+    projects_count: 1,
     recent_activity: [],
     weekly_goals: [],
   };
@@ -79,7 +79,7 @@ export default function ProgressTrackerView({ currentUser }: ProgressTrackerView
           </h1>
         </div>
         <p style={{ fontSize: "13px", color: "#64748b", margin: 0 }}>
-          Quantifiable preparation metrics recorded across your learning roadmap, interview practice, and job applications{currentUser?.full_name ? ` for ${currentUser.full_name}` : ""}.
+          Quantifiable preparation metrics recorded across your learning roadmap, interview practice, and portfolio development{currentUser?.full_name ? ` for ${currentUser.full_name}` : ""}.
         </p>
       </div>
 
@@ -90,8 +90,8 @@ export default function ProgressTrackerView({ currentUser }: ProgressTrackerView
           { label: "Learning Hours Logged", val: `${p.learning_hours_logged} hrs`, sub: "Based on verified tasks", icon: Clock, color: "#2563eb", bg: "#dbeafe" },
           { label: "Mock Interviews Done", val: p.mock_interviews_completed, sub: "AI evaluated attempts", icon: Mic, color: "#9333ea", bg: "#f3e8ff" },
           { label: "Skills Assessed", val: p.skills_assessed, sub: "Verified profile skills", icon: Layers, color: "#0891b2", bg: "#cffafe" },
-          { label: "Jobs Tracked / Saved", val: p.jobs_saved, sub: "Matching opportunities", icon: Briefcase, color: "#d97706", bg: "#fef3c7" },
-          { label: "Applications Active", val: p.applications_submitted, sub: "Applied, Interview, Offer", icon: Award, color: "#16a34a", bg: "#dcfce7" },
+          { label: "Learning Modules Done", val: p.learning_modules_completed || 0, sub: "Verified course completions", icon: GraduationCap, color: "#16a34a", bg: "#dcfce7" },
+          { label: "Portfolio Projects", val: p.projects_count ?? 1, sub: "Demonstrated technical artifacts", icon: Award, color: "#d97706", bg: "#fef3c7" },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
